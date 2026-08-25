@@ -1,40 +1,62 @@
 const Ping = require("../models/Ping");
 
-const createPing = async (req, res) => {
+// 1. Create New Alert / Ping
+exports.createPing = async (req, res) => {
   try {
-    const { title, description, type, landmark, longitude, latitude, radius } = req.body;
-    
-    const newPing = await Ping.create({
-      title, description, type, landmark,
-      location: { type: "Point", coordinates: [parseFloat(longitude), parseFloat(latitude)] },
-      radius: radius || 500
+    const { title, description, type, landmark, latitude, longitude } = req.body;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({ error: "Latitude and Longitude are required" });
+    }
+
+    const newPing = new Ping({
+      title,
+      description,
+      type,
+      landmark,
+      location: {
+        type: "Point",
+        coordinates: [parseFloat(longitude), parseFloat(latitude)] // ⚠️ Longitude FIRST
+      }
     });
 
-    res.status(201).json({ success: true, data: newPing });
+    await newPing.save();
+
+    // Socket broadcast (if configured)
+    const io = req.app.get("io");
+    if (io) io.emit("new-ping", newPing);
+
+    res.status(201).json(newPing);
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error("Create Ping Error Log:", err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-const getNearbyPings = async (req, res) => {
+// 2. Get Nearby Pings
+exports.getNearbyPings = async (req, res) => {
   try {
-    const { longitude, latitude, radius = 500 } = req.query;
+    const { lat, lng, radius = 5000 } = req.query; // Default 5km radius
+
+    if (!lat || !lng) {
+      return res.status(400).json({ error: "Lat and Lng query params required" });
+    }
 
     const pings = await Ping.find({
-      status: "ACTIVE",
       location: {
         $near: {
-          $geometry: { type: "Point", coordinates: [parseFloat(longitude), parseFloat(latitude)] },
-          $maxDistance: parseInt(radius)
+          $geometry: {
+            type: "Point",
+            coordinates: [parseFloat(lng), parseFloat(lat)] // ⚠️ Longitude FIRST
+          },
+          $maxDistance: parseInt(radius) // distance in meters
         }
       }
     });
 
-    res.status(200).json({ success: true, count: pings.length, data: pings });
+    res.status(200).json(pings);
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error("Get Nearby Error Log:", err);
+    res.status(500).json({ error: err.message });
   }
 };
-
-
-module.exports = { createPing, getNearbyPings };
