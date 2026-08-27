@@ -1,12 +1,14 @@
 const Ping = require("../models/Ping");
 
-// 1. Create New Alert / Ping
 exports.createPing = async (req, res) => {
   try {
-    const { title, description, type, landmark, latitude, longitude } = req.body;
+    const { title, description, type, landmark, latitude, longitude, lat, lng } = req.body;
 
-    if (!latitude || !longitude) {
-      return res.status(400).json({ error: "Latitude and Longitude are required" });
+    const finalLat = parseFloat(latitude || lat);
+    const finalLng = parseFloat(longitude || lng);
+
+    if (isNaN(finalLat) || isNaN(finalLng)) {
+      return res.status(400).json({ error: "Invalid Lat/Lng coordinates!" });
     }
 
     const newPing = new Ping({
@@ -16,30 +18,30 @@ exports.createPing = async (req, res) => {
       landmark,
       location: {
         type: "Point",
-        coordinates: [parseFloat(longitude), parseFloat(latitude)] // ⚠️ Longitude FIRST
+        coordinates: [finalLng, finalLat] // [Longitude, Latitude]
       }
     });
 
     await newPing.save();
 
-    // Socket broadcast (if configured)
     const io = req.app.get("io");
     if (io) io.emit("new-ping", newPing);
 
     res.status(201).json(newPing);
   } catch (err) {
-    console.error("Create Ping Error Log:", err);
+    console.error("🔴 CREATE PING ERROR LOG:", err.message);
     res.status(500).json({ error: err.message });
   }
 };
 
-// 2. Get Nearby Pings
 exports.getNearbyPings = async (req, res) => {
   try {
-    const { lat, lng, radius = 5000 } = req.query; // Default 5km radius
+    const lat = parseFloat(req.query.latitude || req.query.lat);
+    const lng = parseFloat(req.query.longitude || req.query.lng);
+    const radius = parseInt(req.query.radius || 5000);
 
-    if (!lat || !lng) {
-      return res.status(400).json({ error: "Lat and Lng query params required" });
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ error: "Invalid Lat/Lng query parameters!" });
     }
 
     const pings = await Ping.find({
@@ -47,16 +49,16 @@ exports.getNearbyPings = async (req, res) => {
         $near: {
           $geometry: {
             type: "Point",
-            coordinates: [parseFloat(lng), parseFloat(lat)] // ⚠️ Longitude FIRST
+            coordinates: [lng, lat]
           },
-          $maxDistance: parseInt(radius) // distance in meters
+          $maxDistance: radius
         }
       }
     });
 
     res.status(200).json(pings);
   } catch (err) {
-    console.error("Get Nearby Error Log:", err);
+    console.error("🔴 GET NEARBY ERROR LOG:", err.message);
     res.status(500).json({ error: err.message });
   }
 };

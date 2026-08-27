@@ -3,6 +3,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import { LocationContext } from './context/LocationContext';
 import MapView from "./components/MapView";
+
 import CreatePingModal from './components/CreatePingModal';
 
 const socket = io('http://localhost:5000');
