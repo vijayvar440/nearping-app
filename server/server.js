@@ -7,9 +7,27 @@ require("dotenv").config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
 
+// ⚡ Socket.io CORS Config
+const io = new Server(server, { 
+  cors: { 
+    origin: "*",
+    methods: ["GET", "POST"]
+  } 
+});
+
+// Socket Instance App me Bind Karo
 app.set("io", io);
+
+// 🔌 Socket Client Connection Logger
+io.on("connection", (socket) => {
+  console.log("⚡ Client Connected to Socket:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("❌ Client Disconnected:", socket.id);
+  });
+});
+
 app.use(cors());
 app.use(express.json());
 

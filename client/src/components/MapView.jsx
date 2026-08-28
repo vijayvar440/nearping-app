@@ -1,119 +1,168 @@
-import React, { useState, useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import axios from "axios";
+import { io } from "socket.io-client";
 import { LocationContext } from "../context/LocationContext";
 
-const CreatePingModal = ({ isOpen, onClose }) => {
-  const { coords } = useContext(LocationContext);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    type: "LOST",
-    landmark: "",
+const socket = io("http://localhost:5000");
+
+// 🎨 Dynamic Marker Icon Creator
+const createCustomIcon = (type = "") => {
+  const alertType = String(type).toLowerCase();
+
+  let bgColor = "#EF4444"; // Default Red (Lost)
+  let emoji = "🔍";
+
+  if (alertType.includes("found")) {
+    bgColor = "#10B981"; // Green
+    emoji = "🎁";
+  } else if (alertType.includes("help") || alertType.includes("urgent") || alertType.includes("danger")) {
+    bgColor = "#F59E0B"; // Yellow/Orange
+    emoji = "🚨";
+  }
+
+  return L.divIcon({
+    className: "custom-leaflet-marker",
+    html: `
+      <div style="
+        background-color: ${bgColor};
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        font-size: 18px;
+        cursor: pointer;
+      ">
+        ${emoji}
+      </div>
+    `,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -19],
   });
-  const [loading, setLoading] = useState(false);
+};
 
-  if (!isOpen) return null;
+// 📍 User Blue Dot Icon
+const userIcon = L.divIcon({
+  className: "user-leaflet-marker",
+  html: `
+    <div style="
+      background-color: #3B82F6;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 0 12px #3B82F6;
+    "></div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!coords) return alert("GPS Location missing!");
+const MapRecenter = ({ coords }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (coords) map.setView([coords.lat, coords.lng], 13);
+  }, [coords, map]);
+  return null;
+};
 
-    setLoading(true);
-    try {
-      await axios.post("http://localhost:5000/api/pings/create", {
-        ...formData,
-        latitude: coords.lat,
-        longitude: coords.lng,
-      });
-      
-      setFormData({ title: "", description: "", type: "LOST", landmark: "" });
-      onClose(); // Form close kar do
-    } catch (err) {
-      console.error("Create Ping Error:", err);
-      alert("Failed to create alert!");
-    } finally {
-      setLoading(false);
-    }
-  };
+const MapView = () => {
+  const { coords } = useContext(LocationContext);
+  const [pings, setPings] = useState([]);
+
+  useEffect(() => {
+    if (!coords) return;
+    const fetchPings = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:5000/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=50000`
+        );
+        console.log("📍 Fetched Pings Data:", res.data);
+        setPings(res.data);
+      } catch (err) {
+        console.error("Fetch Pings Error:", err);
+      }
+    };
+    fetchPings();
+  }, [coords]);
+
+  useEffect(() => {
+    socket.on("new-ping", (newPing) => {
+      console.log("⚡ Live Socket Ping:", newPing);
+      setPings((prev) => [newPing, ...prev]);
+    });
+    return () => socket.off("new-ping");
+  }, []);
+
+  if (!coords) {
+    return (
+      <div className="h-[450px] w-full bg-gray-900 flex flex-col items-center justify-center rounded-2xl text-white">
+        <div className="animate-spin text-3xl mb-2">📍</div>
+        <p className="font-medium">Fetching GPS Location...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">📢 Create Radar Alert</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
-        </div>
+    <div className="h-[450px] w-full rounded-2xl overflow-hidden shadow-xl border border-gray-700 relative">
+      {/* Remove Leaflet Default Icon Box Background */}
+      <style>{`
+        .custom-leaflet-marker, .user-leaflet-marker {
+          background: transparent !important;
+          border: none !important;
+        }
+      `}</style>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Alert Type</label>
-            <select
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+      <MapContainer center={[coords.lat, coords.lng]} zoom={13} className="h-full w-full">
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <MapRecenter coords={coords} />
+
+        {/* User Location */}
+        <Marker position={[coords.lat, coords.lng]} icon={userIcon}>
+          <Popup>
+            <span className="font-bold">📍 Aap Yahan Hain</span>
+          </Popup>
+        </Marker>
+
+        {/* Dynamic Ping Markers */}
+        {pings.map((ping) => {
+          const lat = ping.location?.coordinates?.[1];
+          const lng = ping.location?.coordinates?.[0];
+
+          if (!lat || !lng) return null;
+
+          return (
+            <Marker
+              key={ping._id || Math.random()}
+              position={[lat, lng]}
+              icon={createCustomIcon(ping.type)}
             >
-              <option value="LOST">🔍 Lost Item / Pet</option>
-              <option value="FOUND">🟢 Found Item</option>
-              <option value="URGENT_HELP">🚨 Urgent Local Help</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Black Wallet Lost"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Landmark / Location Detail</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Near Tea Stall, Main Gate"
-              value={formData.landmark}
-              onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              required
-              rows="3"
-              placeholder="Provide details so locals can help..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-1/2 py-2.5 border rounded-lg text-gray-600 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-1/2 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {loading ? "Posting..." : "Post Alert"}
-            </button>
-          </div>
-        </form>
-      </div>
+              <Popup>
+                <div className="p-1 min-w-[150px]">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 uppercase">
+                    {ping.type || "Alert"}
+                  </span>
+                  <h3 className="font-bold text-gray-900 text-sm mt-1">{ping.title}</h3>
+                  <p className="text-xs text-gray-600">📍 {ping.landmark}</p>
+                  <p className="text-xs text-gray-500 mt-1">{ping.description}</p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
     </div>
   );
 };
 
-export default CreatePingModal;
+export default MapView;
