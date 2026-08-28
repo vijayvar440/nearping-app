@@ -1,26 +1,42 @@
-import { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect } from "react";
 
 export const LocationContext = createContext();
 
 export const LocationProvider = ({ children }) => {
   const [coords, setCoords] = useState(null);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser");
+    if (!("geolocation" in navigator)) {
+      console.warn("⚠️ Geolocation not supported. Using fallback.");
+      setCoords({ lat: 28.6139, lng: 77.2090 });
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => setError(err.message),
-      { enableHighAccuracy: true }
+    
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setCoords({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      (error) => {
+        console.warn("⚠️ GPS Error/Denied. Using Fallback Coords.");
+        setCoords((prev) => prev || { lat: 28.6139, lng: 77.2090 });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
     );
+
+    // Cleanup watch on unmount
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   return (
-    <LocationContext.Provider value={{ coords, error }}>
+    <LocationContext.Provider value={{ coords, setCoords }}>
       {children}
     </LocationContext.Provider>
   );

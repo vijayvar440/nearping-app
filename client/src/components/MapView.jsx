@@ -6,19 +6,20 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import { LocationContext } from "../context/LocationContext";
 
+// Socket connection
 const socket = io("http://localhost:5000");
 
-// 🎨 Dynamic Marker Icon Creator
+// 🎨 FINALIZED Color-Coded Marker Generator
 const createCustomIcon = (type = "") => {
-  const alertType = String(type).toLowerCase();
+  const alertType = String(type).toUpperCase();
 
-  let bgColor = "#EF4444"; // Default Red (Lost)
+  let bgColor = "#EF4444"; // Default Red (LOST)
   let emoji = "🔍";
 
-  if (alertType.includes("found")) {
+  if (alertType === "FOUND") {
     bgColor = "#10B981"; // Green
     emoji = "🎁";
-  } else if (alertType.includes("help") || alertType.includes("urgent") || alertType.includes("danger")) {
+  } else if (alertType === "URGENT_HELP") {
     bgColor = "#F59E0B"; // Yellow/Orange
     emoji = "🚨";
   }
@@ -48,7 +49,7 @@ const createCustomIcon = (type = "") => {
   });
 };
 
-// 📍 User Blue Dot Icon
+// 📍 User Blue Pulsing Icon
 const userIcon = L.divIcon({
   className: "user-leaflet-marker",
   html: `
@@ -59,6 +60,7 @@ const userIcon = L.divIcon({
       border-radius: 50%;
       border: 3px solid white;
       box-shadow: 0 0 12px #3B82F6;
+      animation: pulse 1.5s infinite;
     "></div>
   `,
   iconSize: [24, 24],
@@ -84,7 +86,7 @@ const MapView = () => {
         const res = await axios.get(
           `http://localhost:5000/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=50000`
         );
-        console.log("📍 Fetched Pings Data:", res.data);
+        console.log("📍 Fetched Pings Data:", res.data); // Confirmed working in console
         setPings(res.data);
       } catch (err) {
         console.error("Fetch Pings Error:", err);
@@ -95,11 +97,23 @@ const MapView = () => {
 
   useEffect(() => {
     socket.on("new-ping", (newPing) => {
-      console.log("⚡ Live Socket Ping:", newPing);
+      console.log("⚡ Live Socket Ping:", newPing); // Confirmed working in console
       setPings((prev) => [newPing, ...prev]);
     });
     return () => socket.off("new-ping");
   }, []);
+  
+  function LocationPicker({ onLocationSelect }) {
+  useMapEvents({
+    click(e) {
+      const { lat, lng } = e.latlng;
+      console.log("📍 Selected Custom Location:", lat, lng);
+      if (onLocationSelect) {
+        onLocationSelect({ lat, lng });
+      }
+    },
+  });
+  return null;
 
   if (!coords) {
     return (
@@ -112,11 +126,16 @@ const MapView = () => {
 
   return (
     <div className="h-[450px] w-full rounded-2xl overflow-hidden shadow-xl border border-gray-700 relative">
-      {/* Remove Leaflet Default Icon Box Background */}
+      {/* Visual Flair for Map and Markers */}
       <style>{`
         .custom-leaflet-marker, .user-leaflet-marker {
           background: transparent !important;
           border: none !important;
+        }
+        @keyframes pulse {
+          0% { box-shadow: 0 0 0 0px rgba(59, 130, 246, 0.7); }
+          70% { box-shadow: 0 0 0 12px rgba(59, 130, 246, 0); }
+          100% { box-shadow: 0 0 0 0px rgba(59, 130, 246, 0); }
         }
       `}</style>
 
@@ -149,7 +168,15 @@ const MapView = () => {
             >
               <Popup>
                 <div className="p-1 min-w-[150px]">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 uppercase">
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded text-white ${
+                      ping.type === "FOUND"
+                        ? "bg-green-600"
+                        : ping.type === "URGENT_HELP"
+                        ? "bg-amber-500"
+                        : "bg-red-600"
+                    }`}
+                  >
                     {ping.type || "Alert"}
                   </span>
                   <h3 className="font-bold text-gray-900 text-sm mt-1">{ping.title}</h3>
