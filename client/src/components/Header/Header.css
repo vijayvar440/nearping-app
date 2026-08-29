@@ -1,0 +1,59 @@
+.app-header {
+  width: 100%;
+  background-color: #111827;
+  border-bottom: 1px solid #1f2937;
+  padding: 16px 0;
+  margin-bottom: 24px;
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  font-size: 1.6rem;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 900;
+  background: linear-gradient(to right, #ef4444, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(17, 24, 39, 0.8);
+  border: 1px solid #374151;
+  padding: 6px 14px;
+  border-radius: 9999px;
+}
+
+.status-text {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+}
