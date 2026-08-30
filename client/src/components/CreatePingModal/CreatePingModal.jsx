@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
 import axios from "axios";
-import { LocationContext } from "../context/LocationContext";
+import { LocationContext } from "../../context/LocationContext";
 
 const CreatePingModal = ({ isOpen, onClose }) => {
   const { coords } = useContext(LocationContext);
