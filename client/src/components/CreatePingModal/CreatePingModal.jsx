@@ -1,112 +1,114 @@
 import React, { useState, useContext } from "react";
 import axios from "axios";
 import { LocationContext } from "../../context/LocationContext";
+import "./CreatePingModal.css";
 
 const CreatePingModal = ({ isOpen, onClose }) => {
   const { coords } = useContext(LocationContext);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    type: "LOST",
-    landmark: "",
-  });
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [landmark, setLandmark] = useState("");
+  const [type, setType] = useState("LOST");
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!coords) return alert("GPS Location missing!");
+
+    if (!coords) {
+      alert("GPS location nahi mili. Please location enable karein.");
+      return;
+    }
 
     setLoading(true);
+
     try {
-      await axios.post("http://localhost:5000/api/pings/create", {
-        ...formData,
+      const newPingData = {
+        title,
+        description,
+        landmark,
+        type,
         latitude: coords.lat,
         longitude: coords.lng,
-      });
-      
-      setFormData({ title: "", description: "", type: "LOST", landmark: "" });
+      };
+
+      await axios.post("http://localhost:5000/api/pings", newPingData);
+
+      setTitle("");
+      setDescription("");
+      setLandmark("");
+      setType("LOST");
       onClose();
-    } catch (err) {
-      console.error("Create Ping Error:", err);
-      alert("Failed to create alert!");
+    } catch (error) {
+      console.error("Alert create karne me error aaya:", error);
+      alert("Alert create nahi ho paya. Dobara try karein.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">📢 Create Radar Alert</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">📢 Create Radar Alert</h2>
+          <button className="close-btn" onClick={onClose}>
+            ✕
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Alert Type</label>
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-group">
+            <label>Alert Type</label>
             <select
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="modal-select"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
             >
               <option value="LOST">🔍 Lost Item / Pet</option>
-              <option value="FOUND">🟢 Found Item</option>
-              <option value="URGENT_HELP">🚨 Urgent Local Help</option>
+              <option value="FOUND">🎁 Found Item</option>
+              <option value="URGENT_HELP">🚨 Emergency / Help Needed</option>
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <div className="form-group">
+            <label>Title</label>
             <input
               type="text"
               required
               placeholder="e.g. Black Wallet Lost"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Landmark / Location Detail</label>
+          <div className="form-group">
+            <label>Landmark / Location Detail</label>
             <input
               type="text"
-              required
               placeholder="e.g. Near Tea Stall, Main Gate"
-              value={formData.landmark}
-              onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              value={landmark}
+              onChange={(e) => setLandmark(e.target.value)}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <div className="form-group">
+            <label>Description</label>
             <textarea
-              required
               rows="3"
               placeholder="Provide details so locals can help..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-            />
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            ></textarea>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-1/2 py-2.5 border rounded-lg text-gray-600 hover:bg-gray-50"
-            >
+          <div className="modal-actions">
+            <button type="button" className="cancel-btn" onClick={onClose}>
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={loading || !coords}
-              className="w-1/2 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-            >
+            <button type="submit" className="submit-btn" disabled={loading}>
               {loading ? "Posting..." : "Post Alert"}
             </button>
           </div>

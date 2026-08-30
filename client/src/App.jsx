@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import Header from "./components/Header/Header";
 import MapView from "./components/MapView/MapView";
 import PingFeed from "./components/PingFeed/PingFeed";
+import CreatePingModal from "./components/CreatePingModal/CreatePingModal";
 import { LocationContext } from "./context/LocationContext";
 import axios from "axios";
 import { io } from "socket.io-client";
@@ -12,6 +13,7 @@ const socket = io("http://localhost:5000");
 function App() {
   const { coords } = useContext(LocationContext);
   const [pings, setPings] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!coords) return;
@@ -37,7 +39,8 @@ function App() {
 
   return (
     <div className="app-root">
-      <Header />
+      <Header onOpenModal={() => setIsModalOpen(true)} />
+      
       <main className="main-layout">
         <div className="map-section">
           <MapView />
@@ -46,6 +49,12 @@ function App() {
           <PingFeed pings={pings} />
         </div>
       </main>
+
+      {/* Alert Creation Modal */}
+      <CreatePingModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }

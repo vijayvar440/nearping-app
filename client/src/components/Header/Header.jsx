@@ -1,7 +1,7 @@
 import React from "react";
 import "./Header.css";
 
-const Header = () => {
+const Header = ({ onOpenModal }) => {
   return (
     <header className="app-header">
       <div className="header-container">
@@ -9,10 +9,16 @@ const Header = () => {
           <span className="logo-icon">📍</span>
           <span className="logo-text">NearPing</span>
         </div>
-        
-        <div className="status-badge">
-          <span className="pulse-dot"></span>
-          <span className="status-text">Live Alerts</span>
+
+        <div className="header-actions">
+          <button className="create-alert-btn" onClick={onOpenModal}>
+            + Post Alert
+          </button>
+          
+          <div className="status-badge">
+            <span className="pulse-dot"></span>
+            <span className="status-text">Live Alerts</span>
+          </div>
         </div>
       </div>
     </header>
