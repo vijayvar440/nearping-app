@@ -1,13 +1,16 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import { LocationProvider } from './context/LocationContext'
+import { AuthProvider } from './context/AuthContext'
 import './index.css'
-import { LocationProvider } from './context/LocationContext.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <LocationProvider>
-      <App />
-    </LocationProvider>
+    <AuthProvider>
+      <LocationProvider>
+        <App />
+      </LocationProvider>
+    </AuthProvider>
   </React.StrictMode>,
 )

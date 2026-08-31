@@ -163,3 +163,40 @@
 .connect-btn:hover {
   background-color: #4338ca;
 }
+/* Radius Selector Control Styles */
+.radius-selector-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #111827;
+  border: 1px solid #1f2937;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.radius-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.radius-dropdown {
+  background-color: #0b0f19;
+  color: #818cf8;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+
+.radius-dropdown:focus {
+  border-color: #6366f1;
+}
+
+.radius-dropdown option {
+  background-color: #111827;
+  color: #ffffff;
+}
