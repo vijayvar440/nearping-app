@@ -1,24 +1,21 @@
 const mongoose = require("mongoose");
 
-const pingSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  type: { 
-    type: String, 
-    enum: ["LOST", "FOUND", "URGENT_HELP"], 
-    default: "LOST" 
+const pingSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    type: { type: String, default: "EMERGENCY" },
+    landmark: { type: String },
+    location: {
+      type: { type: String, enum: ["Point"], default: "Point" },
+      coordinates: { type: [Number], required: true }, // [longitude, latitude]
+    },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
-  landmark: { type: String, required: true },
-  location: {
-    type: { type: String, default: "Point" },
-    coordinates: { type: [Number], required: true } // [longitude, latitude]
-  },
-  radius: { type: Number, default: 500 },
-  status: { type: String, enum: ["ACTIVE", "RESOLVED"], default: "ACTIVE" },
-  createdAt: { type: Date, default: Date.now }
-});
+  { timestamps: true }
+);
 
-// 🔴 CRITICAL: Geospatial index for nearby queries
+// 🚨 Mandatory for GeoJSON queries
 pingSchema.index({ location: "2dsphere" });
 
 module.exports = mongoose.model("Ping", pingSchema);

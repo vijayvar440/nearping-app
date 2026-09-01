@@ -17,6 +17,9 @@ function App() {
   const [radius, setRadius] = useState(5);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  
+  // 📍 Selected Location state for Map Clicks
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   useEffect(() => {
     if (!coords) return;
@@ -41,6 +44,11 @@ function App() {
     return () => socket.off("new-ping");
   }, []);
 
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedLocation(null); // Reset location marker on close
+  };
+
   return (
     <div className="app-root">
       <Header
@@ -50,7 +58,11 @@ function App() {
 
       <main className="main-layout">
         <div className="map-section">
-          <MapView />
+          <MapView
+            selectedLocation={selectedLocation}
+            setSelectedLocation={setSelectedLocation}
+            setIsModalOpen={setIsModalOpen}
+          />
         </div>
         <div className="feed-section">
           <PingFeed pings={pings} radius={radius} setRadius={setRadius} />
@@ -60,7 +72,8 @@ function App() {
       {/* Alert Create Modal */}
       <CreatePingModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
+        selectedLocation={selectedLocation}
       />
 
       {/* Login / Register Modal */}

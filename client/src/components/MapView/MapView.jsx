@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import axios from "axios";
@@ -41,6 +41,14 @@ const userIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
+// Selected Location Marker Icon (for New Alert)
+const tempSelectedIcon = L.divIcon({
+  className: "selected-leaflet-marker",
+  html: `<div style="font-size: 24px;">📍</div>`,
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+});
+
 const MapRecenter = ({ coords }) => {
   const map = useMap();
   useEffect(() => {
@@ -49,7 +57,17 @@ const MapRecenter = ({ coords }) => {
   return null;
 };
 
-const MapView = () => {
+// 📍 Map Click Handler Listener
+const MapClickHandler = ({ onMapClick }) => {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng);
+    },
+  });
+  return null;
+};
+
+const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
   const { coords } = useContext(LocationContext);
   const [pings, setPings] = useState([]);
 
@@ -75,6 +93,12 @@ const MapView = () => {
     return () => socket.off("new-ping");
   }, []);
 
+  // Map Click Function
+  const handleMapClick = (latlng) => {
+    setSelectedLocation(latlng);
+    if (setIsModalOpen) setIsModalOpen(true);
+  };
+
   if (!coords) {
     return (
       <div className="map-loading-box">
@@ -88,10 +112,23 @@ const MapView = () => {
       <MapContainer center={[coords.lat, coords.lng]} zoom={13} style={{ height: "100%", width: "100%" }}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <MapRecenter coords={coords} />
+        
+        {/* Map Click Listener */}
+        <MapClickHandler onMapClick={handleMapClick} />
+
+        {/* Current User Location */}
         <Marker position={[coords.lat, coords.lng]} icon={userIcon}>
           <Popup>📍 Aap Yahan Hain</Popup>
         </Marker>
 
+        {/* Temporary Selected Location Marker */}
+        {selectedLocation && (
+          <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={tempSelectedIcon}>
+            <Popup>🎯 New Alert Location</Popup>
+          </Marker>
+        )}
+
+        {/* Active Broadcast Pings */}
         {pings.map((ping) => {
           const lat = ping.location?.coordinates?.[1];
           const lng = ping.location?.coordinates?.[0];

@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const pingController = require("../controllers/pingController");
+const { createPing, getPingsNear } = require("../controllers/pingController");
 
-// Create alert
-router.post("/create", pingController.createPing);
+// GET /api/pings/near
+router.get("/near", getPingsNear);
 
-router.get("/near", pingController.getNearbyPings);
-router.get("/nearby", pingController.getNearbyPings);
+// POST /api/pings
+router.post("/", createPing);
 
 module.exports = router;

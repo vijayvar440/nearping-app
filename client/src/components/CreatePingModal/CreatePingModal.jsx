@@ -3,13 +3,12 @@ import axios from "axios";
 import { LocationContext } from "../../context/LocationContext";
 import "./CreatePingModal.css";
 
-const CreatePingModal = ({ isOpen, onClose }) => {
+const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
   const { coords } = useContext(LocationContext);
-
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [landmark, setLandmark] = useState("");
   const [type, setType] = useState("LOST");
+  const [landmark, setLandmark] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -17,59 +16,59 @@ const CreatePingModal = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!coords) {
-      alert("GPS location nahi mili. Please location enable karein.");
+    // Priority: Map Click Location -> Current GPS Location
+    const lat = selectedLocation?.lat || coords?.lat;
+    const lng = selectedLocation?.lng || coords?.lng;
+
+    if (!lat || !lng) {
+      alert("❌ Location coordinates missing hain! Map par click karke location select karein.");
       return;
     }
 
-    setLoading(true);
-
     try {
-      const newPingData = {
-        title,
-        description,
-        landmark,
-        type,
-        latitude: coords.lat,
-        longitude: coords.lng,
-      };
+      setLoading(true);
+      const token = localStorage.getItem("token");
 
-      await axios.post("http://localhost:5000/api/pings", newPingData);
+      await axios.post(
+        "http://localhost:5000/api/pings",
+        {
+          title,
+          description,
+          landmark,
+          category: type,
+          latitude: lat,
+          longitude: lng,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-      setTitle("");
-      setDescription("");
-      setLandmark("");
-      setType("LOST");
-      onClose();
-    } catch (error) {
-      console.error("Alert create karne me error aaya:", error);
-      alert("Alert create nahi ho paya. Dobara try karein.");
-    } finally {
+      alert("🚀 Alert successfully broadcast ho gaya!");
       setLoading(false);
+      onClose();
+    } catch (err) {
+      setLoading(false);
+      console.error("Alert Create Error:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Alert create nahi ho paya. Server logs dekhein.");
     }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+      <div className="modal-content">
         <div className="modal-header">
-          <h2 className="modal-title">📢 Create Radar Alert</h2>
-          <button className="close-btn" onClick={onClose}>
-            ✕
-          </button>
+          <h2>📢 Create Radar Alert</h2>
+          <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-form">
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Alert Type</label>
-            <select
-              className="modal-select"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-            >
+            <select value={type} onChange={(e) => setType(e.target.value)}>
               <option value="LOST">🔍 Lost Item / Pet</option>
               <option value="FOUND">🎁 Found Item</option>
-              <option value="URGENT_HELP">🚨 Emergency / Help Needed</option>
+              <option value="URGENT_HELP">🚨 Urgent Help Required</option>
             </select>
           </div>
 
@@ -77,10 +76,10 @@ const CreatePingModal = ({ isOpen, onClose }) => {
             <label>Title</label>
             <input
               type="text"
-              required
-              placeholder="e.g. Black Wallet Lost"
+              placeholder="e.g., Black Leather Wallet"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              required
             />
           </div>
 
@@ -88,7 +87,7 @@ const CreatePingModal = ({ isOpen, onClose }) => {
             <label>Landmark / Location Detail</label>
             <input
               type="text"
-              placeholder="e.g. Near Tea Stall, Main Gate"
+              placeholder="e.g., Near Bus Stand, Sector 4"
               value={landmark}
               onChange={(e) => setLandmark(e.target.value)}
             />
@@ -98,17 +97,18 @@ const CreatePingModal = ({ isOpen, onClose }) => {
             <label>Description</label>
             <textarea
               rows="3"
-              placeholder="Provide details so locals can help..."
+              placeholder="Provide relevant details..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              required
             ></textarea>
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="cancel-btn" onClick={onClose}>
+            <button type="button" className="btn-cancel" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="submit-btn" disabled={loading}>
+            <button type="submit" className="btn-submit" disabled={loading}>
               {loading ? "Posting..." : "Post Alert"}
             </button>
           </div>

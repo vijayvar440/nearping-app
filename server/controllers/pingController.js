@@ -1,47 +1,52 @@
 const Ping = require("../models/Ping");
 
+// 1. Create Ping
 exports.createPing = async (req, res) => {
   try {
-    const { title, description, type, landmark, latitude, longitude, lat, lng } = req.body;
+    const { title, description, category, type, landmark, latitude, longitude } = req.body;
 
-    const finalLat = parseFloat(latitude || lat);
-    const finalLng = parseFloat(longitude || lng);
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
 
-    if (isNaN(finalLat) || isNaN(finalLng)) {
-      return res.status(400).json({ error: "Invalid Lat/Lng coordinates!" });
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ message: "Valid latitude and longitude are required." });
     }
 
     const newPing = new Ping({
       title,
       description,
-      type,
       landmark,
+      type: type || category || "EMERGENCY",
       location: {
         type: "Point",
-        coordinates: [finalLng, finalLat] // [Longitude, Latitude]
-      }
+        coordinates: [lng, lat], // [Longitude, Latitude]
+      },
     });
 
     await newPing.save();
 
+    // Socket Broadcast
     const io = req.app.get("io");
     if (io) io.emit("new-ping", newPing);
 
-    res.status(201).json(newPing);
+    return res.status(201).json(newPing);
   } catch (err) {
-    console.error("🔴 CREATE PING ERROR LOG:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("Create Ping Error:", err);
+    return res.status(500).json({ message: "Server error creating ping", error: err.message });
   }
 };
 
-exports.getNearbyPings = async (req, res) => {
+// 2. Get Nearby Pings
+exports.getPingsNear = async (req, res) => {
   try {
-    const lat = parseFloat(req.query.latitude || req.query.lat);
-    const lng = parseFloat(req.query.longitude || req.query.lng);
-    const radius = parseInt(req.query.radius || 5000);
+    const { latitude, longitude, radius } = req.query;
+
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    const rad = parseFloat(radius) || 50000;
 
     if (isNaN(lat) || isNaN(lng)) {
-      return res.status(400).json({ error: "Invalid Lat/Lng query parameters!" });
+      return res.status(400).json({ message: "Invalid location parameters." });
     }
 
     const pings = await Ping.find({
@@ -49,16 +54,16 @@ exports.getNearbyPings = async (req, res) => {
         $near: {
           $geometry: {
             type: "Point",
-            coordinates: [lng, lat]
+            coordinates: [lng, lat],
           },
-          $maxDistance: radius
-        }
-      }
-    });
+          $maxDistance: rad,
+        },
+      },
+    }).sort({ createdAt: -1 });
 
-    res.status(200).json(pings);
+    return res.json(pings);
   } catch (err) {
-    console.error("🔴 GET NEARBY ERROR LOG:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("Get Near Pings Error:", err);
+    return res.status(500).json({ message: "Server error fetching pings", error: err.message });
   }
 };
