@@ -3,29 +3,30 @@ const Ping = require("../models/Ping");
 // 1. Create Ping
 exports.createPing = async (req, res) => {
   try {
-    const { title, description, category, type, landmark, latitude, longitude } = req.body;
+    const { title, description, category, landmark, contactInfo, broadcastRadius, latitude, longitude } = req.body;
 
     const lat = parseFloat(latitude);
     const lng = parseFloat(longitude);
 
     if (isNaN(lat) || isNaN(lng)) {
-      return res.status(400).json({ message: "Valid latitude and longitude are required." });
+      return res.status(400).json({ message: "Valid coordinates are required." });
     }
 
     const newPing = new Ping({
       title,
       description,
       landmark,
-      type: type || category || "EMERGENCY",
+      contactInfo,
+      broadcastRadius: parseFloat(broadcastRadius) || 5,
+      type: category || "LOST",
       location: {
         type: "Point",
-        coordinates: [lng, lat], // [Longitude, Latitude]
+        coordinates: [lng, lat],
       },
     });
 
     await newPing.save();
 
-    // Socket Broadcast
     const io = req.app.get("io");
     if (io) io.emit("new-ping", newPing);
 

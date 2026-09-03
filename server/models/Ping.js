@@ -4,8 +4,10 @@ const pingSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     description: { type: String, required: true },
-    type: { type: String, default: "EMERGENCY" },
+    type: { type: String, default: "LOST" },
     landmark: { type: String },
+    contactInfo: { type: String, required: true }, // 📞 Contact number / WhatsApp
+    broadcastRadius: { type: Number, default: 5 }, // 📡 Alert Radius in KM
     location: {
       type: { type: String, enum: ["Point"], default: "Point" },
       coordinates: { type: [Number], required: true }, // [longitude, latitude]
@@ -15,7 +17,6 @@ const pingSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// 🚨 Mandatory for GeoJSON queries
 pingSchema.index({ location: "2dsphere" });
 
 module.exports = mongoose.model("Ping", pingSchema);

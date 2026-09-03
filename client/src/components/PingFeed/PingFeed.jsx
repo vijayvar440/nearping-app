@@ -80,6 +80,9 @@ const PingFeed = ({ pings = [], radius, setRadius }) => {
               badgeIcon = "🚨";
             }
 
+            // WhatsApp link generator (removes non-numeric chars)
+            const cleanPhone = ping.contactInfo ? ping.contactInfo.replace(/[^0-9]/g, "") : "";
+
             return (
               <div key={ping._id || Math.random()} className="ping-card">
                 <div className="card-top">
@@ -88,7 +91,14 @@ const PingFeed = ({ pings = [], radius, setRadius }) => {
                     <span>{badgeLabel}</span>
                   </span>
 
-                  <span className="distance-tag">📍 {distanceText}</span>
+                  <div className="card-top-right" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {ping.broadcastRadius && (
+                      <span className="broadcast-badge" style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                        📡 {ping.broadcastRadius}km
+                      </span>
+                    )}
+                    <span className="distance-tag">📍 {distanceText}</span>
+                  </div>
                 </div>
 
                 <h3 className="card-title">{ping.title}</h3>
@@ -113,12 +123,24 @@ const PingFeed = ({ pings = [], radius, setRadius }) => {
                       : "Just now"}
                   </span>
 
-                  <button
-                    className="connect-btn"
-                    onClick={() => alert(`Connect for: ${ping.title}`)}
-                  >
-                    💬 Connect
-                  </button>
+                  {cleanPhone ? (
+                    <a
+                      href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hi, saw your alert on NearPing: "${ping.title}"`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="connect-btn"
+                      style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      💬 Connect
+                    </a>
+                  ) : (
+                    <button
+                      className="connect-btn"
+                      onClick={() => alert(`Contact details not provided for: ${ping.title}`)}
+                    >
+                      💬 Connect
+                    </button>
+                  )}
                 </div>
               </div>
             );

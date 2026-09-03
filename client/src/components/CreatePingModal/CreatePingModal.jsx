@@ -8,17 +8,18 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
   const [title, setTitle] = useState("");
   const [type, setType] = useState("LOST");
   const [landmark, setLandmark] = useState("");
+  const [contactInfo, setContactInfo] = useState("");
+  const [broadcastRadius, setBroadcastRadius] = useState(5);
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
+  const lat = selectedLocation?.lat || coords?.lat;
+  const lng = selectedLocation?.lng || coords?.lng;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Priority: Map Click Location -> Current GPS Location
-    const lat = selectedLocation?.lat || coords?.lat;
-    const lng = selectedLocation?.lng || coords?.lng;
 
     if (!lat || !lng) {
       alert("❌ Location coordinates missing hain! Map par click karke location select karein.");
@@ -35,6 +36,8 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
           title,
           description,
           landmark,
+          contactInfo,
+          broadcastRadius,
           category: type,
           latitude: lat,
           longitude: lng,
@@ -44,13 +47,13 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
         }
       );
 
-      alert("🚀 Alert successfully broadcast ho gaya!");
+      alert(`🚀 Alert broadcasted within ${broadcastRadius} KM radius!`);
       setLoading(false);
       onClose();
     } catch (err) {
       setLoading(false);
       console.error("Alert Create Error:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Alert create nahi ho paya. Server logs dekhein.");
+      alert(err.response?.data?.message || "Alert create nahi ho paya.");
     }
   };
 
@@ -58,46 +61,76 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h2>📢 Create Radar Alert</h2>
+          <h2>📡 Broadcast Radar Alert</h2>
           <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Alert Type</label>
-            <select value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="LOST">🔍 Lost Item / Pet</option>
-              <option value="FOUND">🎁 Found Item</option>
-              <option value="URGENT_HELP">🚨 Urgent Help Required</option>
-            </select>
+          {/* Target Location Preview Tag */}
+          <div className="location-badge">
+            📍 Target Location: <span>{lat?.toFixed(4)}, {lng?.toFixed(4)}</span>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group flex-1">
+              <label>Alert Category</label>
+              <select value={type} onChange={(e) => setType(e.target.value)}>
+                <option value="LOST">🔍 Lost Item / Pet</option>
+                <option value="FOUND">🎁 Found Something</option>
+                <option value="URGENT_HELP">🚨 Urgent Help Required</option>
+              </select>
+            </div>
+
+            <div className="form-group flex-1">
+              <label>Broadcast Range (Range)</label>
+              <select value={broadcastRadius} onChange={(e) => setBroadcastRadius(e.target.value)}>
+                <option value="2">📡 2 KM (Local)</option>
+                <option value="5">📡 5 KM (City Suburb)</option>
+                <option value="10">📡 10 KM (Wide Area)</option>
+                <option value="25">📡 25 KM (Max Coverage)</option>
+              </select>
+            </div>
           </div>
 
           <div className="form-group">
             <label>Title</label>
             <input
               type="text"
-              placeholder="e.g., Black Leather Wallet"
+              placeholder="e.g., Black Wallet / Golden Retriever Dog"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
             />
           </div>
 
-          <div className="form-group">
-            <label>Landmark / Location Detail</label>
-            <input
-              type="text"
-              placeholder="e.g., Near Bus Stand, Sector 4"
-              value={landmark}
-              onChange={(e) => setLandmark(e.target.value)}
-            />
+          <div className="form-row">
+            <div className="form-group flex-1">
+              <label>Landmark / Spot</label>
+              <input
+                type="text"
+                placeholder="e.g., Near Bus Stand"
+                value={landmark}
+                onChange={(e) => setLandmark(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group flex-1">
+              <label>Contact Number / WhatsApp</label>
+              <input
+                type="text"
+                placeholder="+91 9876543210"
+                value={contactInfo}
+                onChange={(e) => setContactInfo(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
           <div className="form-group">
-            <label>Description</label>
+            <label>Description & Identification Marks</label>
             <textarea
               rows="3"
-              placeholder="Provide relevant details..."
+              placeholder="Describe color, special marks, time lost, etc..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
@@ -109,7 +142,7 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
               Cancel
             </button>
             <button type="submit" className="btn-submit" disabled={loading}>
-              {loading ? "Posting..." : "Post Alert"}
+              {loading ? "Broadcasting..." : "📡 Broadcast Alert"}
             </button>
           </div>
         </form>
