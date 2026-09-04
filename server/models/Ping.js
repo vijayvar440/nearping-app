@@ -1,22 +1,54 @@
 const mongoose = require("mongoose");
 
-const pingSchema = new mongoose.Schema(
-  {
-    title: { type: String, required: true },
-    description: { type: String, required: true },
-    type: { type: String, default: "LOST" },
-    landmark: { type: String },
-    contactInfo: { type: String, required: true }, // 📞 Contact number / WhatsApp
-    broadcastRadius: { type: Number, default: 5 }, // 📡 Alert Radius in KM
-    location: {
-      type: { type: String, enum: ["Point"], default: "Point" },
-      coordinates: { type: [Number], required: true }, // [longitude, latitude]
-    },
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+const PingSchema = new mongoose.Schema({
+
+  title: 
+        { type: String,
+           required: true },
+
+  type: 
+       { type: String, 
+        enum: ["LOST", "FOUND", "URGENT_HELP"], required: true },
+  description: { type: String },
+
+
+  landmark: 
+  { type: String },
+
+  contactInfo: 
+  { type: String },
+  
+  // 🔐 Security & Status Fields
+  secretQuestion:
+   { type: String,
+     default: "" }, 
+
+
+  status:
+   { type: String, 
+    enum: ["ACTIVE", "RESOLVED"],
+     default: "ACTIVE" },
+
+  location: {
+    type: { type: String,
+       enum: ["Point"],
+        default: "Point" },
+
+    coordinates:
+     { type: [Number],
+       required: true } 
   },
-  { timestamps: true }
-);
 
-pingSchema.index({ location: "2dsphere" });
+  broadcastRadius:
+   { type: Number, 
+    default: 5 },
 
-module.exports = mongoose.model("Ping", pingSchema);
+  createdAt:
+   { type: Date,
+    
+     default: Date.now }
+});
+
+PingSchema.index({ location: "2dsphere" });
+
+module.exports = mongoose.model("Ping", PingSchema);
