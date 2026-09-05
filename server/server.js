@@ -37,11 +37,13 @@ app.use(express.json());
 // Routes
 const pingRoutes = require("./routes/pingRoutes");
 const authRoutes = require("./routes/authRoutes");
+const clainRoutes =  require("./routes/claimRoutes");
 
 app.use("/api/pings", pingRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/Claims",clainRoutes)
 
-// Start Server after DB Connects
+
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {

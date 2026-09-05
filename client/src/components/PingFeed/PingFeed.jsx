@@ -22,7 +22,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return `${distance.toFixed(1)}km away`;
 };
 
-const PingFeed = ({ pings = [], radius, setRadius }) => {
+// 👈 onViewClaimsClick prop add kiya
+const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsClick }) => {
   const { coords } = useContext(LocationContext);
 
   return (
@@ -80,7 +81,6 @@ const PingFeed = ({ pings = [], radius, setRadius }) => {
               badgeIcon = "🚨";
             }
 
-            // WhatsApp link generator (removes non-numeric chars)
             const cleanPhone = ping.contactInfo ? ping.contactInfo.replace(/[^0-9]/g, "") : "";
 
             return (
@@ -123,7 +123,46 @@ const PingFeed = ({ pings = [], radius, setRadius }) => {
                       : "Just now"}
                   </span>
 
-                  {cleanPhone ? (
+                  {/* 🔐 LOST items handle Verification and Claims */}
+                  {typeUpper === "LOST" ? (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      {/* Check Claims Button (Owner) */}
+                      {onViewClaimsClick && (
+                        <button
+                          onClick={() => onViewClaimsClick(ping)}
+                          style={{
+                            backgroundColor: "#3b82f6",
+                            color: "#ffffff",
+                            border: "none",
+                            padding: "6px 12px",
+                            borderRadius: "8px",
+                            fontSize: "0.8rem",
+                            fontWeight: "600",
+                            cursor: "pointer"
+                          }}
+                        >
+                          📥 Claims
+                        </button>
+                      )}
+
+                      {/* Submit Claim Button (Finder) */}
+                      <button
+                        className="connect-btn claim-btn"
+                        onClick={() => onClaimClick && onClaimClick(ping)}
+                        style={{
+                          backgroundColor: "#f59e0b",
+                          color: "#ffffff",
+                          border: "none",
+                          cursor: "pointer",
+                          fontWeight: "600",
+                          padding: "6px 12px",
+                          borderRadius: "8px"
+                        }}
+                      >
+                        ✋ I Found This
+                      </button>
+                    </div>
+                  ) : cleanPhone ? (
                     <a
                       href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hi, saw your alert on NearPing: "${ping.title}"`)}`}
                       target="_blank"
