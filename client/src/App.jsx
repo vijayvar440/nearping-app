@@ -5,6 +5,7 @@ import PingFeed from "./components/PingFeed/PingFeed";
 import { LocationContext } from "./context/LocationContext";
 import axios from "axios";
 import { io } from "socket.io-client";
+import CreatePing from "./components/CreatePing/CreatePing";
 import "./App.css";
 
 const socket = io("http://localhost:5000");
@@ -38,6 +39,11 @@ function App() {
   return (
     <div className="app-root">
       <Header />
+     
+     <div className="create-ping-area">
+  <CreatePing />
+</div>
+
       <main className="main-layout">
         <div className="map-section">
           <MapView />

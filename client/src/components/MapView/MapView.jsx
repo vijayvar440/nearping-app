@@ -78,7 +78,7 @@ const MapView = () => {
   if (!coords) {
     return (
       <div className="map-loading-box">
-        <p>📍 GPS Location fetch ho rahi hai...</p>
+        <p>📍 GPS Location is fetching...</p>
       </div>
     );
   }
@@ -86,10 +86,13 @@ const MapView = () => {
   return (
     <div className="map-container-wrapper">
       <MapContainer center={[coords.lat, coords.lng]} zoom={13} style={{ height: "100%", width: "100%" }}>
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+  <TileLayer
+  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+  attribution="&copy; OpenStreetMap contributors"
+/>
         <MapRecenter coords={coords} />
         <Marker position={[coords.lat, coords.lng]} icon={userIcon}>
-          <Popup>📍 Aap Yahan Hain</Popup>
+          <Popup>📍you are here</Popup>
         </Marker>
 
         {pings.map((ping) => {

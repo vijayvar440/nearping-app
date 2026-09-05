@@ -1,24 +1,127 @@
 .map-container-wrapper {
-  height: 480px;
+  position: relative;
+
   width: 100%;
-  border-radius: 16px;
+  height: 480px;
+
+  border-radius: 20px;
   overflow: hidden;
-  border: 1px solid #1f2937;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-  background-color: #111827;
+
+  background: #0b1220;
+
+  border: 1px solid rgba(148, 163, 184, 0.16);
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.35),
+    0 0 40px rgba(255, 61, 117, 0.05);
+
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
+.map-container-wrapper:hover {
+  border-color: rgba(255, 61, 117, 0.25);
+
+  box-shadow:
+    0 24px 55px rgba(0, 0, 0, 0.4),
+    0 0 45px rgba(255, 61, 117, 0.08);
+}
+
+/* Leaflet map */
+
+.map-container-wrapper .leaflet-container {
+  width: 100%;
+  height: 100%;
+
+  background: #111827;
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+/* Slight overlay to blend map with UI */
+
+.map-container-wrapper::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    inset 0 0 50px rgba(3, 7, 18, 0.12);
+
+  z-index: 400;
+}
+
+/* GPS loading */
+
 .map-loading-box {
+  position: relative;
+
+  width: 100%;
   height: 480px;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #111827;
-  color: #9ca3af;
-  border-radius: 16px;
-  border: 1px solid #1f2937;
-  font-weight: 500;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(255, 61, 117, 0.08),
+      transparent 45%
+    ),
+    #0b1220;
+
+  color: #94a3b8;
+
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+
+  overflow: hidden;
 }
+
+.map-loading-box::before {
+  content: "";
+
+  width: 70px;
+  height: 70px;
+
+  position: absolute;
+
+  border: 1px solid rgba(255, 61, 117, 0.25);
+  border-radius: 50%;
+
+  animation: gpsRadar 2s ease-out infinite;
+}
+
+.map-loading-box p {
+  position: relative;
+  z-index: 2;
+
+  margin: 0;
+
+  padding: 12px 18px;
+
+  background: rgba(17, 24, 39, 0.8);
+
+  border: 1px solid rgba(255, 61, 117, 0.15);
+
+  border-radius: 999px;
+
+  font-size: 0.85rem;
+}
+
+/* Alert markers */
 
 .custom-leaflet-marker,
 .user-leaflet-marker {
@@ -26,47 +129,220 @@
   border: none !important;
 }
 
+/* Alert marker */
+
 .marker-pin {
   width: 38px;
   height: 38px;
-  border-radius: 50%;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  font-size: 18px;
+
+  border-radius: 50%;
+
+  border: 3px solid rgba(255, 255, 255, 0.95);
+
+  box-shadow:
+    0 5px 15px rgba(0, 0, 0, 0.45),
+    0 0 18px rgba(255, 61, 117, 0.2);
+
+  font-size: 17px;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
+
+.marker-pin:hover {
+  transform: scale(1.12);
+
+  box-shadow:
+    0 7px 20px rgba(0, 0, 0, 0.5),
+    0 0 25px rgba(255, 61, 117, 0.35);
+}
+
+/* Current user location */
 
 .user-pulse-dot {
+  position: relative;
+
   width: 20px;
   height: 20px;
-  background-color: #3b82f6;
+
+  background: #ff3d75;
+
   border-radius: 50%;
+
   border: 3px solid #ffffff;
-  box-shadow: 0 0 12px #3b82f6;
+
+  box-shadow:
+    0 0 12px rgba(255, 61, 117, 0.9),
+    0 0 25px rgba(255, 61, 117, 0.4);
+
+  animation: userLocationPulse 1.8s ease-in-out infinite;
 }
 
+.user-pulse-dot::after {
+  content: "";
+
+  position: absolute;
+
+  inset: -9px;
+
+  border: 2px solid rgba(255, 61, 117, 0.35);
+
+  border-radius: 50%;
+
+  animation: locationRing 1.8s ease-out infinite;
+}
+
+/* Leaflet controls */
+
+.leaflet-control-zoom {
+  border: none !important;
+
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3) !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(11, 18, 32, 0.9) !important;
+  color: #f8fafc !important;
+
+  border: 1px solid rgba(148, 163, 184, 0.12) !important;
+
+  backdrop-filter: blur(10px);
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #ff3d75 !important;
+  color: #ffffff !important;
+}
+
+/* Popup */
+
 .leaflet-popup-content-wrapper {
-  background-color: #1f2937 !important;
-  color: #f3f4f6 !important;
-  border-radius: 8px !important;
-  border: 1px solid #374151;
+  background: rgba(11, 18, 32, 0.96) !important;
+
+  color: #f8fafc !important;
+
+  border-radius: 12px !important;
+
+  border: 1px solid rgba(255, 61, 117, 0.18);
+
+  box-shadow:
+    0 15px 35px rgba(0, 0, 0, 0.4),
+    0 0 25px rgba(255, 61, 117, 0.08);
+
+  backdrop-filter: blur(12px);
 }
 
 .leaflet-popup-tip {
-  background-color: #1f2937 !important;
+  background: #0b1220 !important;
 }
 
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #ff3d75 !important;
+}
+
+/* Popup content */
+
 .popup-content strong {
-  color: #ffffff;
-  font-size: 0.95rem;
   display: block;
-  margin-bottom: 4px;
+
+  margin-bottom: 6px;
+
+  color: #ffffff;
+
+  font-size: 0.95rem;
+
+  font-weight: 700;
 }
 
 .popup-content p {
-  color: #d1d5db;
-  font-size: 0.85rem;
   margin: 0;
+
+  color: #cbd5e1;
+
+  font-size: 0.82rem;
+
+  line-height: 1.5;
+}
+
+/* Animations */
+
+@keyframes userLocationPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(0.88);
+  }
+}
+
+@keyframes locationRing {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.5);
+  }
+
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes gpsRadar {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.3);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
+
+/* Tablet */
+
+@media (max-width: 900px) {
+  .map-container-wrapper,
+  .map-loading-box {
+    height: 430px;
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 500px) {
+  .map-container-wrapper,
+  .map-loading-box {
+    height: 360px;
+
+    border-radius: 16px;
+  }
+
+  .marker-pin {
+    width: 34px;
+    height: 34px;
+
+    font-size: 15px;
+  }
+
+  .user-pulse-dot {
+    width: 18px;
+    height: 18px;
+  }
 }

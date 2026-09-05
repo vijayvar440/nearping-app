@@ -28,7 +28,7 @@ const PingFeed = ({ pings = [] }) => {
   if (!pings || pings.length === 0) {
     return (
       <div className="feed-empty-box">
-        <p>Koi nearby alerts nahi mile.</p>
+        <p>No nearby alerts found.</p>
       </div>
     );
   }

@@ -1,59 +1,243 @@
 .app-header {
   width: 100%;
-  background-color: #111827;
-  border-bottom: 1px solid #1f2937;
-  padding: 16px 0;
+  padding: 18px 0;
   margin-bottom: 24px;
+
+  background: rgba(3, 7, 18, 0.72);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  position: relative;
+  z-index: 1000;
 }
 
+/* Subtle glow under header */
+
+.app-header::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -1px;
+
+  height: 1px;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 61, 117, 0.45),
+    rgba(129, 140, 248, 0.45),
+    transparent
+  );
+}
+
+/* Header content */
+
 .header-container {
-  max-width: 1200px;
+  width: min(1200px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 0 16px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+/* Logo */
+
 .brand-logo {
   display: flex;
   align-items: center;
   gap: 10px;
+
+  cursor: default;
 }
+
+/* Location icon */
 
 .logo-icon {
-  font-size: 1.6rem;
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 1.2rem;
+
+  background: linear-gradient(
+    135deg,
+    rgba(255, 61, 117, 0.18),
+    rgba(129, 140, 248, 0.18)
+  );
+
+  border: 1px solid rgba(255, 61, 117, 0.25);
+  border-radius: 11px;
+
+  box-shadow:
+    0 0 20px rgba(255, 61, 117, 0.12),
+    inset 0 0 12px rgba(255, 255, 255, 0.03);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
+.brand-logo:hover .logo-icon {
+  transform: translateY(-2px) rotate(-4deg);
+
+  box-shadow:
+    0 0 28px rgba(255, 61, 117, 0.22),
+    inset 0 0 12px rgba(255, 255, 255, 0.05);
+}
+
+/* NearPing text */
+
 .logo-text {
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 900;
-  background: linear-gradient(to right, #ef4444, #818cf8);
+
+  letter-spacing: -0.8px;
+
+  background: linear-gradient(
+    90deg,
+    #ff3d75,
+    #ff5c8a,
+    #818cf8
+  );
+
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  letter-spacing: -0.5px;
+  background-clip: text;
+
+  filter: drop-shadow(0 0 12px rgba(255, 61, 117, 0.15));
 }
+
+/* Live Alerts */
 
 .status-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background-color: rgba(17, 24, 39, 0.8);
-  border: 1px solid #374151;
-  padding: 6px 14px;
-  border-radius: 9999px;
+  gap: 9px;
+
+  padding: 8px 14px;
+
+  background: rgba(16, 185, 129, 0.07);
+
+  border: 1px solid rgba(16, 185, 129, 0.22);
+
+  border-radius: 999px;
+
+  box-shadow:
+    0 0 20px rgba(16, 185, 129, 0.05),
+    inset 0 0 12px rgba(16, 185, 129, 0.03);
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
 }
 
-.status-text {
-  font-size: 0.8rem;
-  color: #9ca3af;
-  font-weight: 500;
+.status-badge:hover {
+  background: rgba(16, 185, 129, 0.11);
+  border-color: rgba(16, 185, 129, 0.35);
 }
+
+/* Green pulse */
 
 .pulse-dot {
+  position: relative;
+
   width: 8px;
   height: 8px;
-  background-color: #10b981;
+
+  background: #10b981;
   border-radius: 50%;
-  box-shadow: 0 0 8px #10b981;
+
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.9);
+
+  animation: livePulse 1.8s ease-in-out infinite;
+}
+
+.pulse-dot::after {
+  content: "";
+
+  position: absolute;
+
+  inset: -4px;
+
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 50%;
+
+  animation: pulseRing 1.8s ease-out infinite;
+}
+
+/* Live text */
+
+.status-text {
+  font-size: 0.78rem;
+  font-weight: 600;
+
+  color: #6ee7b7;
+
+  letter-spacing: 0.2px;
+}
+
+/* Animations */
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.65;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.6);
+  }
+
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 500px) {
+  .app-header {
+    padding: 14px 0;
+    margin-bottom: 18px;
+  }
+
+  .header-container {
+    width: calc(100% - 20px);
+  }
+
+  .logo-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+
+  .logo-text {
+    font-size: 1.3rem;
+  }
+
+  .status-badge {
+    padding: 7px 10px;
+  }
+
+  .status-text {
+    font-size: 0.7rem;
+  }
 }

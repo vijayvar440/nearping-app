@@ -144,7 +144,7 @@ const MapView = ({ pings = [] }) => {
           icon={userIcon}
         >
           <Popup>
-            <strong>📍 Aap Yahan Hain</strong>
+            <strong>📍you are here</strong>
           </Popup>
         </Marker>
 

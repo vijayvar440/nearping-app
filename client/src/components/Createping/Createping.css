@@ -1,0 +1,432 @@
+.create-ping-wrapper {
+  width: 100%;
+}
+
+/* Create Alert button */
+
+.create-ping-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  padding: 10px 16px;
+
+  color: #ffffff;
+
+  background: linear-gradient(
+    135deg,
+    #ff3d75,
+    #8b5cf6
+  );
+
+  border: none;
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  box-shadow:
+    0 8px 22px rgba(255, 61, 117, 0.18);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.create-ping-btn:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 10px 28px rgba(255, 61, 117, 0.28);
+}
+
+.create-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* Modal background */
+
+.ping-modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(0, 0, 0, 0.72);
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  animation: modalOverlay 0.2s ease;
+}
+
+/* Modal */
+
+.ping-modal {
+  width: min(500px, 100%);
+  max-height: calc(100vh - 40px);
+
+  overflow-y: auto;
+
+  padding: 24px;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(255, 61, 117, 0.09),
+      transparent 35%
+    ),
+    #0b1220;
+
+  border: 1px solid rgba(255, 61, 117, 0.2);
+
+  border-radius: 20px;
+
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.55),
+    0 0 45px rgba(255, 61, 117, 0.08);
+
+  animation: modalAppear 0.25s ease;
+}
+
+/* Modal scrollbar */
+
+.ping-modal::-webkit-scrollbar {
+  width: 5px;
+}
+
+.ping-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ping-modal::-webkit-scrollbar-thumb {
+  background: #293548;
+  border-radius: 999px;
+}
+
+/* Header */
+
+.ping-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 22px;
+}
+
+.modal-label {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #ff5c8a;
+
+  font-size: 0.65rem;
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+}
+
+.ping-modal-header h2 {
+  margin: 0 0 5px;
+
+  color: #f8fafc;
+
+  font-size: 1.45rem;
+  font-weight: 800;
+
+  letter-spacing: -0.5px;
+}
+
+.ping-modal-header p {
+  margin: 0;
+
+  color: #94a3b8;
+
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* Close button */
+
+.close-modal-btn {
+  width: 32px;
+  height: 32px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #94a3b8;
+
+  background: rgba(148, 163, 184, 0.07);
+
+  border: 1px solid rgba(148, 163, 184, 0.12);
+
+  border-radius: 9px;
+
+  cursor: pointer;
+
+  font-size: 1.35rem;
+  line-height: 1;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 61, 117, 0.15);
+  border-color: rgba(255, 61, 117, 0.25);
+}
+
+/* Form */
+
+.create-ping-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-group label {
+  color: #cbd5e1;
+
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+/* Inputs */
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+
+  padding: 11px 12px;
+
+  color: #f8fafc;
+
+  background: rgba(3, 7, 18, 0.7);
+
+  border: 1px solid rgba(148, 163, 184, 0.15);
+
+  border-radius: 9px;
+
+  outline: none;
+
+  font-family: inherit;
+  font-size: 0.8rem;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.form-group textarea {
+  min-height: 100px;
+
+  resize: vertical;
+
+  line-height: 1.5;
+}
+
+.form-group select {
+  cursor: pointer;
+}
+
+.form-group select option {
+  background: #0b1220;
+  color: #f8fafc;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #475569;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  background: rgba(3, 7, 18, 0.9);
+
+  border-color: rgba(255, 61, 117, 0.45);
+
+  box-shadow:
+    0 0 0 3px rgba(255, 61, 117, 0.07);
+}
+
+/* Location status */
+
+.location-status {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 12px;
+
+  background: rgba(16, 185, 129, 0.06);
+
+  border: 1px solid rgba(16, 185, 129, 0.16);
+
+  border-radius: 11px;
+}
+
+.location-icon {
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(16, 185, 129, 0.1);
+
+  border-radius: 9px;
+
+  font-size: 1rem;
+}
+
+.location-status strong {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #6ee7b7;
+
+  font-size: 0.75rem;
+}
+
+.location-status p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 0.68rem;
+
+  line-height: 1.4;
+}
+
+/* Submit */
+
+.submit-ping-btn {
+  width: 100%;
+
+  padding: 12px;
+
+  margin-top: 2px;
+
+  color: #ffffff;
+
+  background: linear-gradient(
+    135deg,
+    #ff3d75,
+    #8b5cf6
+  );
+
+  border: none;
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  box-shadow:
+    0 8px 22px rgba(255, 61, 117, 0.16);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.submit-ping-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 10px 28px rgba(255, 61, 117, 0.25);
+}
+
+.submit-ping-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.submit-ping-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Animations */
+
+@keyframes modalOverlay {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 500px) {
+  .ping-modal-overlay {
+    padding: 12px;
+  }
+
+  .ping-modal {
+    max-height: calc(100vh - 24px);
+
+    padding: 19px;
+
+    border-radius: 17px;
+  }
+
+  .ping-modal-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .ping-modal-header p {
+    font-size: 0.72rem;
+  }
+}
