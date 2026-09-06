@@ -1,29 +1,35 @@
 const mongoose = require("mongoose");
 
-
-const ClaimSchema =  new mongoose.Schema({
-
-    pingId:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"ping",
-        required:true
+const claimSchema = new mongoose.Schema(
+  {
+    ping: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Ping",
     },
-    finderAnswer:{
-        type:String,
-        required:true
+    pingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Ping",
     },
-    finderContact:{
-        type:String,
-        required:true
+    // 🔐 YEH FIELD MISSING THA - ISSE ADD KARO
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
-
-   status: { 
-    type: String, 
-    enum: ["PENDING", "ACCEPTED", "REJECTED"], 
-    default: "PENDING" 
+    finderAnswer: { 
+      type: String, 
+      default: "" 
+    },
+    finderContact: { 
+      type: String, 
+      default: "" 
+    },
+    status: {
+      type: String,
+      enum: ["PENDING", "ACCEPTED", "REJECTED"],
+      default: "PENDING",
+    },
   },
-  createdAt: { type: Date,
-     default: Date.now }
-})
+  { timestamps: true }
+);
 
-module.exports = mongoose.model("Claim",ClaimSchema);
+module.exports = mongoose.model("Claim", claimSchema);

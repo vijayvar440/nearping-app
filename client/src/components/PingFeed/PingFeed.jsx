@@ -22,20 +22,32 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return `${distance.toFixed(1)}km away`;
 };
 
-// 👈 onViewClaimsClick prop add kiya
 const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsClick }) => {
   const { coords } = useContext(LocationContext);
 
+  // 🔐 1. Current Logged-in User ID extract
+  const savedUserData = localStorage.getItem("user") || localStorage.getItem("userInfo");
+  let currentUser = null;
+  try {
+    currentUser = savedUserData ? JSON.parse(savedUserData) : null;
+  } catch (err) {
+    console.error("User parsing error:", err);
+  }
+
+  const currentUserId = 
+    currentUser?._id || 
+    currentUser?.id || 
+    currentUser?.user?._id || 
+    currentUser?.user?.id;
+
   return (
     <div className="feed-container">
-      {/* Title & Radius Selector Controls */}
       <div className="feed-header">
         <h2 className="feed-title">
           📡 Alerts
           <span className="badge-count">{pings.length} Active</span>
         </h2>
 
-        {/* 🎯 Radius Range Dropdown */}
         <div className="radius-selector-box">
           <span className="radius-label">Range:</span>
           <select 
@@ -72,7 +84,7 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
             let badgeIcon = "🔍";
             let badgeLabel = ping.type || "LOST";
 
-            const typeUpper = String(ping.type).toUpperCase();
+            const typeUpper = String(ping.type || "LOST").toUpperCase();
             if (typeUpper === "FOUND") {
               badgeClass = "badge-found";
               badgeIcon = "🎁";
@@ -82,6 +94,18 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
             }
 
             const cleanPhone = ping.contactInfo ? ping.contactInfo.replace(/[^0-9]/g, "") : "";
+
+            // 🔐 2. Post Owner ID extract karna
+            const pingOwnerId = 
+              typeof ping.user === "object" 
+                ? (ping.user?._id || ping.user?.id) 
+                : (ping.user || ping.userId || ping.createdBy);
+
+            const isOwner = Boolean(
+              currentUserId && 
+              pingOwnerId && 
+              String(currentUserId) === String(pingOwnerId)
+            );
 
             return (
               <div key={ping._id || Math.random()} className="ping-card">
@@ -123,46 +147,60 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
                       : "Just now"}
                   </span>
 
-                  {/* 🔐 LOST items handle Verification and Claims */}
-                  {typeUpper === "LOST" ? (
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      {/* Check Claims Button (Owner) */}
-                      {onViewClaimsClick && (
-                        <button
-                          onClick={() => onViewClaimsClick(ping)}
-                          style={{
-                            backgroundColor: "#3b82f6",
-                            color: "#ffffff",
-                            border: "none",
-                            padding: "6px 12px",
-                            borderRadius: "8px",
-                            fontSize: "0.8rem",
-                            fontWeight: "600",
-                            cursor: "pointer"
-                          }}
-                        >
-                          📥 Claims
-                        </button>
-                      )}
-
-                      {/* Submit Claim Button (Finder) */}
-                      <button
-                        className="connect-btn claim-btn"
-                        onClick={() => onClaimClick && onClaimClick(ping)}
-                        style={{
-                          backgroundColor: "#f59e0b",
-                          color: "#ffffff",
-                          border: "none",
-                          cursor: "pointer",
-                          fontWeight: "600",
-                          padding: "6px 12px",
-                          borderRadius: "8px"
-                        }}
-                      >
-                        ✋ I Found This
-                      </button>
-                    </div>
+                  {/* 🔐 3. DYNAMIC WORKFLOW BUTTON LOGIC */}
+                  {isOwner ? (
+                    // 🟦 Post Creator (LOST ho ya FOUND) -> View Claims
+                    <button
+                      onClick={() => onViewClaimsClick && onViewClaimsClick(ping)}
+                      style={{
+                        backgroundColor: "#3b82f6",
+                        color: "#ffffff",
+                        border: "none",
+                        padding: "6px 14px",
+                        borderRadius: "8px",
+                        fontWeight: "600",
+                        fontSize: "0.85rem",
+                        cursor: "pointer"
+                      }}
+                    >
+                      📥 Check Claims
+                    </button>
+                  ) : typeUpper === "LOST" ? (
+                    // 🟧 Non-owner viewing LOST item -> "I Found This"
+                    <button
+                      className="connect-btn claim-btn"
+                      onClick={() => onClaimClick && onClaimClick(ping)}
+                      style={{
+                        backgroundColor: "#f59e0b",
+                        color: "#ffffff",
+                        border: "none",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                        padding: "6px 14px",
+                        borderRadius: "8px"
+                      }}
+                    >
+                      ✋ I Found This
+                    </button>
+                  ) : typeUpper === "FOUND" ? (
+                    // 🟪 Non-owner viewing FOUND item -> "This Is Mine"
+                    <button
+                      className="connect-btn claim-btn"
+                      onClick={() => onClaimClick && onClaimClick(ping)}
+                      style={{
+                        backgroundColor: "#8b5cf6",
+                        color: "#ffffff",
+                        border: "none",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                        padding: "6px 14px",
+                        borderRadius: "8px"
+                      }}
+                    >
+                      🙋 This Is Mine
+                    </button>
                   ) : cleanPhone ? (
+                    // 🟩 Urgent Help / Direct Whatsapp Connect
                     <a
                       href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hi, saw your alert on NearPing: "${ping.title}"`)}`}
                       target="_blank"
