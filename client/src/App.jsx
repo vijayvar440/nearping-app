@@ -5,7 +5,8 @@ import PingFeed from "./components/PingFeed/PingFeed";
 import CreatePingModal from "./components/CreatePingModal/CreatePingModal";
 import AuthModal from "./components/AuthModal/AuthModal";
 import ClaimModal from "./components/ClaimModel/ClaimModal";
-import ClaimsListModal from "./components/ClaimModel/ClaimsListModal"
+import ClaimsListModal from "./components/ClaimModel/ClaimsListModal";
+import RadarAlertToast from "./components/RadarAlertToast/RadarAlertToast";
 import { LocationContext } from "./context/LocationContext";
 import axios from "axios";
 import { io } from "socket.io-client";
@@ -24,7 +25,7 @@ function App() {
   const [selectedPingForClaim, setSelectedPingForClaim] = useState(null);
 
   // 📍 Owner Check Claims Modal State
-  const [selectedPingForViewClaims, setSelectedPingForViewClaims] = useState(null); // 👈 2. New State
+  const [selectedPingForViewClaims, setSelectedPingForViewClaims] = useState(null);
 
   // 📍 Selected Location state for Map Clicks
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -51,7 +52,7 @@ function App() {
       setPings((prev) => [newPing, ...prev]);
     });
 
-    // 👈 Live Hide Ping on Resolve
+    // Live Hide Ping on Resolve
     socket.on("ping-resolved", ({ pingId }) => {
       setPings((prev) => prev.filter((p) => p._id !== pingId));
     });
@@ -69,6 +70,9 @@ function App() {
 
   return (
     <div className="app-root">
+      {/* 🚨 Live Geo-Fenced Radar Toast Notifications */}
+      <RadarAlertToast />
+
       <Header
         onOpenModal={() => setIsModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
@@ -83,7 +87,6 @@ function App() {
           />
         </div>
         <div className="feed-section">
-          {/* 👈 3. Feed ko dono triggers pass kiye */}
           <PingFeed 
             pings={pings} 
             radius={radius} 
@@ -107,7 +110,7 @@ function App() {
         onClose={() => setIsAuthModalOpen(false)}
       />
 
-      {/* 👈 4. Finder Claim Modal */}
+      {/* Finder Claim Modal */}
       {selectedPingForClaim && (
         <ClaimModal
           ping={selectedPingForClaim}
@@ -115,7 +118,7 @@ function App() {
         />
       )}
 
-      {/* 👈 5. Owner Claims List Modal */}
+      {/* Owner Claims List Modal */}
       {selectedPingForViewClaims && (
         <ClaimsListModal
           ping={selectedPingForViewClaims}
