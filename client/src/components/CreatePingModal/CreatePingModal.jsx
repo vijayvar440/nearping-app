@@ -2,10 +2,10 @@ import React, { useState, useContext, useEffect } from "react";
 import axios from "axios";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css"; // 👈 IMPORTANT: Fixes crushed map height!
 import { LocationContext } from "../../context/LocationContext";
 import "./CreatePingModal.css";
 
-// Leaflet Default Marker Icon Fix
 import markerIconAuto from "leaflet/dist/images/marker-icon.png";
 import markerShadowAuto from "leaflet/dist/images/marker-shadow.png";
 
@@ -16,7 +16,6 @@ const customIcon = L.icon({
   iconAnchor: [12, 41],
 });
 
-// 📍 Sub-component: Handles map click inside modal
 function LocationPicker({ pin, setPin }) {
   useMapEvents({
     click(e) {
@@ -29,7 +28,6 @@ function LocationPicker({ pin, setPin }) {
   ) : null;
 }
 
-// 🎯 Sub-component: Recenter map when pin position updates via Search
 function MapRecenter({ coords }) {
   const map = useMap();
   useEffect(() => {
@@ -38,6 +36,33 @@ function MapRecenter({ coords }) {
     }
   }, [coords, map]);
   return null;
+}
+
+function ResetMapButton({ userCoords, setPin }) {
+  const map = useMap();
+
+  const handleReset = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (userCoords?.lat && userCoords?.lng) {
+      setPin({ lat: userCoords.lat, lng: userCoords.lng });
+      map.flyTo([userCoords.lat, userCoords.lng], 15, { animate: true });
+    } else {
+      alert("⚠️ Live GPS location nahi mili!");
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className="map-reset-btn"
+      onClick={handleReset}
+      title="Reset to My Location"
+    >
+      🎯 Current Location
+    </button>
+  );
 }
 
 const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
@@ -50,15 +75,12 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 📍 Pin coordinates state
   const [pinCoords, setPinCoords] = useState({ lat: null, lng: null });
 
-  // 🔍 Rapido-style Location Search States
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Sync coords from props or Context
   useEffect(() => {
     const lat = selectedLocation?.lat || coords?.lat;
     const lng = selectedLocation?.lng || coords?.lng;
@@ -67,7 +89,22 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
     }
   }, [selectedLocation, coords]);
 
-  // 🔍 Location Autocomplete Search (Nominatim API)
+  const resetForm = () => {
+    setTitle("");
+    setType("LOST");
+    setLandmark("");
+    setContactInfo("");
+    setBroadcastRadius(5);
+    setDescription("");
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   const handleSearchChange = async (e) => {
     const text = e.target.value;
     setSearchQuery(text);
@@ -90,15 +127,14 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
     }
   };
 
-  // 📍 Select Location from Search Results
   const selectPlace = (item) => {
     const newLat = parseFloat(item.lat);
     const newLng = parseFloat(item.lon);
 
     setPinCoords({ lat: newLat, lng: newLng });
-    setSearchQuery(item.display_name.split(",")[0]); // Show concise place name
-    setLandmark(item.display_name); // Auto-fill landmark field
-    setSearchResults([]); // Hide dropdown
+    setSearchQuery(item.display_name.split(",")[0]);
+    setLandmark(item.display_name);
+    setSearchResults([]);
   };
 
   if (!isOpen) return null;
@@ -115,7 +151,7 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      await axios.post(
+      const res = await axios.post(
         "http://localhost:5000/api/pings",
         {
           title,
@@ -133,8 +169,21 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
         }
       );
 
+      // 💾 STEP 1 FIX: Save created Alert ID in LocalStorage for ownership tracking
+      const createdPing = res.data;
+      const createdPingId = createdPing?._id || createdPing?.id || createdPing?.ping?._id;
+
+      if (createdPingId) {
+        const myCreatedPings = JSON.parse(localStorage.getItem("myCreatedPings") || "[]");
+        if (!myCreatedPings.includes(createdPingId)) {
+          myCreatedPings.push(createdPingId);
+          localStorage.setItem("myCreatedPings", JSON.stringify(myCreatedPings));
+        }
+      }
+
       alert(`🚀 Alert broadcasted within ${broadcastRadius} KM radius!`);
       setLoading(false);
+      resetForm();
       onClose();
     } catch (err) {
       setLoading(false);
@@ -145,53 +194,27 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className="modal-card">
         <div className="modal-header">
           <h2>📡 Broadcast Radar Alert</h2>
-          <button className="close-btn" onClick={onClose}>&times;</button>
+          <button className="close-btn" onClick={handleClose}>&times;</button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* 🔍 Rapido-Style Search Input */}
-          <div className="form-group" style={{ position: "relative" }}>
-            <label>🔍 Search Incident Location (Rapido Style)</label>
+        <form onSubmit={handleSubmit} className="modal-form">
+          {/* 🔍 Search Input */}
+          <div className="form-group search-input-wrapper">
+            <label>🔍 Search Location</label>
             <input
               type="text"
-              placeholder="e.g., Bhopal Junction, MP Nagar, GT Road..."
+              placeholder="e.g., Bhopal Junction, MP Nagar..."
               value={searchQuery}
               onChange={handleSearchChange}
             />
 
-            {/* Dropdown Suggestions */}
             {searchResults.length > 0 && (
-              <ul style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                right: 0,
-                backgroundColor: "#fff",
-                border: "1px solid #ccc",
-                borderRadius: "6px",
-                maxHeight: "150px",
-                overflowY: "auto",
-                zIndex: 1000,
-                listStyle: "none",
-                padding: 0,
-                margin: "4px 0 0 0",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
-              }}>
+              <ul className="suggestions-list">
                 {searchResults.map((item, idx) => (
-                  <li
-                    key={idx}
-                    onClick={() => selectPlace(item)}
-                    style={{
-                      padding: "8px 12px",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      borderBottom: "1px solid #eee",
-                      color: "#333"
-                    }}
-                  >
+                  <li key={idx} onClick={() => selectPlace(item)}>
                     📍 {item.display_name}
                   </li>
                 ))}
@@ -199,14 +222,14 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
             )}
           </div>
 
-          {/* Target Location Badge */}
-          <div className="location-badge mb-2">
-            📍 Incident Spot: <span>{pinCoords.lat?.toFixed(4)}, {pinCoords.lng?.toFixed(4)}</span>
+          {/* Location Badge */}
+          <div className="location-badge">
+            📍 Spot: <span>{pinCoords.lat?.toFixed(4)}, {pinCoords.lng?.toFixed(4)}</span>
           </div>
 
-          {/* Mini Interactive Map Picker */}
+          {/* Mini Map Container */}
           {pinCoords.lat && pinCoords.lng && (
-            <div style={{ height: "180px", width: "100%", marginBottom: "12px", borderRadius: "8px", overflow: "hidden" }}>
+            <div className="mini-map-box">
               <MapContainer
                 center={[pinCoords.lat, pinCoords.lng]}
                 zoom={14}
@@ -215,14 +238,15 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <LocationPicker pin={pinCoords} setPin={setPinCoords} />
                 <MapRecenter coords={pinCoords} />
+                <ResetMapButton userCoords={coords} setPin={setPinCoords} />
               </MapContainer>
             </div>
           )}
 
           <div className="form-row">
             <div className="form-group flex-1">
-              <label>Alert Category</label>
-              <select value={type} onChange={(e) => setType(e.target.value)}>
+              <label>Category</label>
+              <select className="modal-select" value={type} onChange={(e) => setType(e.target.value)}>
                 <option value="LOST">🔍 Lost Item / Pet</option>
                 <option value="FOUND">🎁 Found Something</option>
                 <option value="URGENT_HELP">🚨 Urgent Help Required</option>
@@ -230,12 +254,12 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
             </div>
 
             <div className="form-group flex-1">
-              <label>Broadcast Range</label>
-              <select value={broadcastRadius} onChange={(e) => setBroadcastRadius(e.target.value)}>
-                <option value="2">📡 2 KM (Local)</option>
-                <option value="5">📡 5 KM (City Suburb)</option>
-                <option value="10">📡 10 KM (Wide Area)</option>
-                <option value="25">📡 25 KM (Max Coverage)</option>
+              <label>Range</label>
+              <select className="modal-select" value={broadcastRadius} onChange={(e) => setBroadcastRadius(e.target.value)}>
+                <option value="2">📡 2 KM</option>
+                <option value="5">📡 5 KM</option>
+                <option value="10">📡 10 KM</option>
+                <option value="25">📡 25 KM</option>
               </select>
             </div>
           </div>
@@ -244,7 +268,7 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
             <label>Title</label>
             <input
               type="text"
-              placeholder="e.g., Black Wallet / Golden Retriever Dog"
+              placeholder="e.g., Black Wallet / Golden Retriever"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -253,17 +277,17 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
 
           <div className="form-row">
             <div className="form-group flex-1">
-              <label>Landmark / Spot</label>
+              <label>Landmark</label>
               <input
                 type="text"
-                placeholder="e.g., Near Bus Stand Chai Stall"
+                placeholder="e.g., Near Bus Stand"
                 value={landmark}
                 onChange={(e) => setLandmark(e.target.value)}
               />
             </div>
 
             <div className="form-group flex-1">
-              <label>Contact Number / WhatsApp</label>
+              <label>Contact / WhatsApp</label>
               <input
                 type="text"
                 placeholder="+91 9876543210"
@@ -275,10 +299,10 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
           </div>
 
           <div className="form-group">
-            <label>Description & Identification Marks</label>
+            <label>Description</label>
             <textarea
-              rows="3"
-              placeholder="Describe color, special marks, time lost, etc..."
+              rows="2"
+              placeholder="Describe marks, time lost, etc..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
@@ -286,10 +310,10 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>
+            <button type="button" className="cancel-btn" onClick={handleClose}>
               Cancel
             </button>
-            <button type="submit" className="btn-submit" disabled={loading}>
+            <button type="submit" className="submit-btn" disabled={loading}>
               {loading ? "Broadcasting..." : "📡 Broadcast Alert"}
             </button>
           </div>

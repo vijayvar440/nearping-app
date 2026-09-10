@@ -1,18 +1,31 @@
+/* ==========================================
+   1. MAIN FEED CONTAINER
+   ========================================== */
 .feed-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  text-align: left;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 12px;
+  box-sizing: border-box;
+  color: #f1f5f9;
+  font-family: inherit;
 }
 
+/* ==========================================
+   2. HEADER & RANGE SELECTOR
+   ========================================== */
 .feed-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 4px;
 }
 
 .feed-title {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #ffffff;
   display: flex;
@@ -22,181 +35,198 @@
 }
 
 .badge-count {
-  font-size: 0.75rem;
-  background-color: rgba(129, 140, 248, 0.15);
+  background-color: rgba(99, 102, 241, 0.18);
   color: #818cf8;
-  padding: 2px 10px;
-  border-radius: 9999px;
-  border: 1px solid rgba(129, 140, 248, 0.3);
-}
-
-.feed-empty-box {
-  background-color: #111827;
-  border: 1px solid #1f2937;
-  border-radius: 16px;
-  padding: 24px;
-  text-align: center;
-  color: #9ca3af;
-  font-size: 0.875rem;
-}
-
-.feed-scroll-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 480px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.ping-card {
-  background-color: #111827;
-  border: 1px solid #1f2937;
+  font-size: 0.72rem;
+  padding: 2px 8px;
   border-radius: 12px;
-  padding: 16px;
-  transition: border-color 0.2s ease;
+  border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
-.ping-card:hover {
-  border-color: #374151;
-}
-
-.card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid transparent;
-}
-
-.badge-lost {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.badge-found {
-  background-color: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-.badge-help {
-  background-color: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border-color: rgba(245, 158, 11, 0.3);
-}
-
-.distance-tag {
-  font-size: 0.75rem;
-  font-family: monospace;
-  color: #818cf8;
-  background-color: rgba(17, 24, 39, 0.9);
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(129, 140, 248, 0.3);
-}
-
-.card-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 4px 0;
-}
-
-.card-landmark {
-  font-size: 0.75rem;
-  color: #9ca3af;
-  margin: 0 0 8px 0;
-}
-
-.card-landmark span {
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.card-desc {
-  font-size: 0.875rem;
-  color: #d1d5db;
-  background-color: #0b0f19;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #1f2937;
-  margin: 0 0 12px 0;
-}
-
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 8px;
-  border-top: 1px solid #1f2937;
-}
-
-.card-time {
-  font-size: 0.7rem;
-  color: #6b7280;
-}
-
-.connect-btn {
-  background-color: #4f46e5;
-  color: #ffffff;
-  border: none;
-  padding: 5px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.connect-btn:hover {
-  background-color: #4338ca;
-}
-/* Radius Selector Control Styles */
 .radius-selector-box {
   display: flex;
   align-items: center;
   gap: 6px;
-  background-color: #111827;
-  border: 1px solid #1f2937;
-  padding: 4px 10px;
+  background-color: #1e293b;
+  padding: 4px 8px;
   border-radius: 8px;
+  border: 1px solid #334155;
 }
 
 .radius-label {
   font-size: 0.75rem;
-  color: #9ca3af;
-  font-weight: 500;
+  color: #94a3b8;
+  font-weight: 600;
 }
 
 .radius-dropdown {
-  background-color: #0b0f19;
-  color: #818cf8;
-  border: 1px solid #374151;
-  border-radius: 6px;
-  padding: 3px 6px;
-  font-size: 0.75rem;
+  background: transparent;
+  border: none;
+  color: #38bdf8;
+  font-size: 0.8rem;
   font-weight: 700;
-  outline: none;
   cursor: pointer;
-}
-
-.radius-dropdown:focus {
-  border-color: #6366f1;
+  outline: none;
 }
 
 .radius-dropdown option {
-  background-color: #111827;
+  background-color: #0f172a;
   color: #ffffff;
+}
+
+/* ==========================================
+   3. SCROLLABLE FEED LIST
+   ========================================== */
+.feed-scroll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 72vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.feed-scroll-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.feed-scroll-list::-webkit-scrollbar-thumb {
+  background-color: #334155;
+  border-radius: 4px;
+}
+
+.feed-empty-box {
+  background-color: #1e293b;
+  border: 1px dashed #334155;
+  padding: 24px;
+  border-radius: 10px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+/* ==========================================
+   4. PING CARD STYLING
+   ========================================== */
+.ping-card {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease, border-color 0.2s ease;
+}
+
+.ping-card:hover {
+  border-color: #475569;
+  transform: translateY(-1px);
+}
+
+.my-ping-card {
+  background-color: #161e2e;
+}
+
+/* Card Top Section */
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.badge-lost {
+  background-color: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-found {
+  background-color: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.badge-help {
+  background-color: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.distance-tag {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* Card Content */
+.card-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.card-landmark {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+.card-landmark span {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.card-desc {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.4;
+  background-color: #0f172a;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+/* Card Footer & Action Buttons */
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.card-time {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.connect-btn {
+  background-color: #25d366;
+  color: #ffffff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.connect-btn:hover {
+  opacity: 0.9;
 }
