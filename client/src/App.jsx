@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import Header from "./components/Header/Header";
 import MapView from "./components/MapView/MapView";
-import PingFeed from "./components/PingFeed/PingFeed";
+import PingFeed from "./components/PingFeed/PingFeed"; // Tabs wala code isi component mein integrated hai
 import CreatePingModal from "./components/CreatePingModal/CreatePingModal";
 import AuthModal from "./components/AuthModal/AuthModal";
 import ClaimModal from "./components/ClaimModel/ClaimModal";
@@ -86,6 +86,8 @@ function App() {
             setIsModalOpen={setIsModalOpen}
           />
         </div>
+
+        {/* 📡 ALERTS SIDEBAR SECTION */}
         <div className="feed-section">
           <PingFeed 
             pings={pings} 

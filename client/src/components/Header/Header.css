@@ -1,31 +1,45 @@
-/* Header Base Container */
-.app-header, .navbar {
+/* ==========================================
+   1. HEADER BASE & STICKY CONTAINER
+   ========================================== */
+.app-header, 
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   width: 100%;
   background-color: #0d1117;
   border-bottom: 1px solid #1f2937;
-  padding: 10px 16px;
+  padding: 10px 20px;
   box-sizing: border-box;
+  backdrop-filter: blur(8px);
 }
 
 .header-container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
 }
 
-/* Logo Area */
-.brand-logo, .logo-container {
+/* ==========================================
+   2. BRAND & LOGO
+   ========================================== */
+.brand-logo, 
+.logo-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .logo-icon {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
 }
 
 .brand-text-group {
@@ -34,9 +48,10 @@
 }
 
 .logo-text {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 900;
-  background: linear-gradient(to right, #ef4444, #818cf8);
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #ef4444, #818cf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1.1;
@@ -46,60 +61,26 @@
 .logo-tagline {
   font-size: 0.65rem;
   color: #6b7280;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
-/* Actions Area (Buttons & Profile) */
-.header-actions, .nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-/* CTA Button (+ Post Alert) */
-.post-alert-cta, .create-alert-btn, .post-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 0.8rem;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-  transition: all 0.2s ease;
-  height: auto;
-  line-height: 1;
-}
-
-.post-alert-cta:hover, .create-alert-btn:hover, .post-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
-}
-
-.cta-icon {
-  font-size: 0.9rem;
-}
-
-/* Status Badge */
+/* ==========================================
+   3. STATUS BADGE (PULSE INDICATOR)
+   ========================================== */
 .status-badge {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #0b0f19;
+  background-color: #111827;
   border: 1px solid #1f2937;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 9999px;
 }
 
 .status-text {
   font-size: 0.75rem;
+  font-weight: 600;
   color: #9ca3af;
 }
 
@@ -108,25 +89,83 @@
   height: 8px;
   background-color: #10b981;
   border-radius: 50%;
-  box-shadow: 0 0 8px #10b981;
+  box-shadow: 0 0 10px #10b981;
+  animation: pulse-glow 2s infinite;
 }
 
-/* User Profile & Auth Buttons */
-.user-profile-box, .user-profile {
+@keyframes pulse-glow {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* ==========================================
+   4. ACTIONS & CTA BUTTONS
+   ========================================== */
+.header-actions, 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.post-alert-cta, 
+.create-alert-btn, 
+.post-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.825rem;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transition: all 0.2s ease;
+}
+
+.post-alert-cta:hover, 
+.create-alert-btn:hover, 
+.post-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.5);
+}
+
+.post-alert-cta:active, 
+.create-alert-btn:active, 
+.post-btn:active {
+  transform: translateY(0);
+}
+
+.cta-icon {
+  font-size: 0.95rem;
+}
+
+/* ==========================================
+   5. USER PROFILE & AUTH
+   ========================================== */
+.user-profile-box, 
+.user-profile {
   display: flex;
   align-items: center;
   gap: 8px;
   background-color: #1f2937;
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 8px;
   border: 1px solid #374151;
 }
 
 .user-name {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: #818cf8;
-  max-width: 80px;
+  color: #a5b4fc;
+  max-width: 90px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -135,42 +174,57 @@
 .logout-btn {
   background: transparent;
   border: none;
-  color: #ef4444;
+  color: #f87171;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  padding: 0;
-  white-space: nowrap;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.logout-btn:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 .login-btn {
   background-color: #1f2937;
   color: #f3f4f6;
   border: 1px solid #374151;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  transition: all 0.2s;
 }
 
-/* 📱 Mobile Responsiveness (Max Width 640px) */
+.login-btn:hover {
+  background-color: #374151;
+  color: #ffffff;
+}
+
+/* ==========================================
+   6. MOBILE RESPONSIVENESS
+   ========================================== */
 @media (max-width: 640px) {
-  .app-header, .navbar {
-    padding: 8px 10px;
+  .app-header, 
+  .navbar {
+    padding: 8px 12px;
   }
 
   .header-container {
-    gap: 6px;
+    gap: 8px;
   }
 
   .logo-icon {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
   }
 
   .logo-text {
-    font-size: 1rem;
+    font-size: 1.05rem;
   }
 
   .logo-tagline, 
@@ -178,23 +232,73 @@
     display: none;
   }
 
-  .post-alert-cta, .create-alert-btn, .post-btn {
-    padding: 6px 8px;
-    font-size: 0.7rem;
+  .post-alert-cta, 
+  .create-alert-btn, 
+  .post-btn {
+    padding: 7px 10px;
+    font-size: 0.75rem;
     gap: 4px;
   }
 
-  .user-profile-box, .user-profile {
-    padding: 4px 6px;
-    gap: 6px;
+  .user-profile-box, 
+  .user-profile {
+    padding: 4px 8px;
   }
 
   .user-name {
-    max-width: 55px;
-    font-size: 0.7rem;
+    max-width: 60px;
+  }
+}
+/* Mobile Responsive Fix (< 480px Screens) */
+@media (max-width: 480px) {
+  .app-header, 
+  .navbar {
+    padding: 8px 10px;
   }
 
-  .logout-btn, .login-btn {
+  .header-container {
+    gap: 6px;
+    justify-content: space-between;
+  }
+
+  /* 1. Logo size shrink */
+  .logo-text {
+    font-size: 0.95rem;
+  }
+
+  .logo-icon {
+    font-size: 1.1rem;
+  }
+
+  .header-actions, 
+  .nav-actions {
+    gap: 6px;
+  }
+
+  /* 2. Post Alert Button compact styling */
+  .post-alert-cta, 
+  .create-alert-btn, 
+  .post-btn {
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    gap: 3px;
+  }
+
+  /* 3. Login / Register Button compact styling */
+  .login-btn {
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    letter-spacing: -0.2px;
+  }
+
+  .user-profile-box, 
+  .user-profile {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+
+  .user-name {
+    max-width: 50px;
     font-size: 0.7rem;
   }
 }

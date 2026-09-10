@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useState, useContext } from "react";
 import { LocationContext } from "../../context/LocationContext";
 import "./PingFeed.css";
 
@@ -24,6 +24,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsClick }) => {
   const { coords } = useContext(LocationContext);
+  const [activeTab, setActiveTab] = useState("nearby"); // 'nearby' | 'my_alerts'
 
   // 🔐 1. Current Logged-in User ID extract
   const savedUserData = localStorage.getItem("user") || localStorage.getItem("userInfo");
@@ -40,12 +41,34 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
     currentUser?.user?._id || 
     currentUser?.user?.id;
 
+  // Helper: Ping Owner ID extract karna
+  const getPingOwnerId = (ping) => {
+    if (typeof ping.user === "object") {
+      return ping.user?._id || ping.user?.id;
+    }
+    return ping.user || ping.userId || ping.createdBy;
+  };
+
+  // 🔀 2. TABS FILTERING LOGIC
+  const myAlerts = pings.filter((ping) => {
+    const ownerId = getPingOwnerId(ping);
+    return currentUserId && ownerId && String(currentUserId) === String(ownerId);
+  });
+
+  const nearbyAlerts = pings.filter((ping) => {
+    const ownerId = getPingOwnerId(ping);
+    return !currentUserId || !ownerId || String(currentUserId) !== String(ownerId);
+  });
+
+  const displayedPings = activeTab === "nearby" ? nearbyAlerts : myAlerts;
+
   return (
     <div className="feed-container">
+      {/* 📡 HEADER & RANGE SELECTOR */}
       <div className="feed-header">
         <h2 className="feed-title">
           📡 Alerts
-          <span className="badge-count">{pings.length} Active</span>
+          <span className="badge-count">{pings.length} Total</span>
         </h2>
 
         <div className="radius-selector-box">
@@ -66,13 +89,67 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
         </div>
       </div>
 
-      {pings.length === 0 ? (
+      {/* 🔘 NEARBY vs MY ALERTS TAB SWITCHER */}
+      <div 
+        className="feed-tabs" 
+        style={{ 
+          display: 'flex', 
+          gap: '8px', 
+          marginBottom: '12px', 
+          background: '#111827', 
+          padding: '4px', 
+          borderRadius: '8px',
+          border: '1px solid rgba(255,255,255,0.08)'
+        }}
+      >
+        <button
+          onClick={() => setActiveTab("nearby")}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.85rem',
+            backgroundColor: activeTab === "nearby" ? '#3b82f6' : 'transparent',
+            color: activeTab === "nearby" ? '#ffffff' : '#9ca3af',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          📡 Nearby ({nearbyAlerts.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("my_alerts")}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.85rem',
+            backgroundColor: activeTab === "my_alerts" ? '#3b82f6' : 'transparent',
+            color: activeTab === "my_alerts" ? '#ffffff' : '#9ca3af',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          👤 My Alerts ({myAlerts.length})
+        </button>
+      </div>
+
+      {/* 📜 FEED LIST DISPLAY */}
+      {displayedPings.length === 0 ? (
         <div className="feed-empty-box">
-          <p>📍 {radius} KM ke andar koi active alert nahi hai.</p>
+          <p>
+            {activeTab === "nearby"
+              ? `📍 ${radius} KM ke andar dusron ka koi active alert nahi hai.`
+              : "👤 Aapne abhi tak koi alert post nahi kiya hai."}
+          </p>
         </div>
       ) : (
         <div className="feed-scroll-list">
-          {pings.map((ping) => {
+          {displayedPings.map((ping) => {
             const pingLat = ping.location?.coordinates?.[1];
             const pingLng = ping.location?.coordinates?.[0];
 
@@ -94,12 +171,7 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
             }
 
             const cleanPhone = ping.contactInfo ? ping.contactInfo.replace(/[^0-9]/g, "") : "";
-
-            // 🔐 2. Post Owner ID extract karna
-            const pingOwnerId = 
-              typeof ping.user === "object" 
-                ? (ping.user?._id || ping.user?.id) 
-                : (ping.user || ping.userId || ping.createdBy);
+            const pingOwnerId = getPingOwnerId(ping);
 
             const isOwner = Boolean(
               currentUserId && 
@@ -108,7 +180,11 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
             );
 
             return (
-              <div key={ping._id || Math.random()} className="ping-card">
+              <div 
+                key={ping._id || Math.random()} 
+                className={`ping-card ${isOwner ? "my-ping-card" : ""}`}
+                style={isOwner ? { border: '1px solid rgba(99, 102, 241, 0.4)' } : {}}
+              >
                 <div className="card-top">
                   <span className={`badge ${badgeClass}`}>
                     <span>{badgeIcon}</span>
@@ -116,6 +192,11 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
                   </span>
 
                   <div className="card-top-right" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {isOwner && (
+                      <span style={{ fontSize: '0.7rem', background: '#6366f1', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                        MY POST
+                      </span>
+                    )}
                     {ping.broadcastRadius && (
                       <span className="broadcast-badge" style={{ fontSize: '0.75rem', opacity: 0.8 }}>
                         📡 {ping.broadcastRadius}km
@@ -147,9 +228,8 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
                       : "Just now"}
                   </span>
 
-                  {/* 🔐 3. DYNAMIC WORKFLOW BUTTON LOGIC */}
+                  {/* 🔐 DYNAMIC WORKFLOW BUTTON LOGIC */}
                   {isOwner ? (
-                    // 🟦 Post Creator (LOST ho ya FOUND) -> View Claims
                     <button
                       onClick={() => onViewClaimsClick && onViewClaimsClick(ping)}
                       style={{
@@ -163,10 +243,9 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
                         cursor: "pointer"
                       }}
                     >
-                      📥 Check Claims
+                      📥 Check Claims ({ping.claims?.length || 0})
                     </button>
                   ) : typeUpper === "LOST" ? (
-                    // 🟧 Non-owner viewing LOST item -> "I Found This"
                     <button
                       className="connect-btn claim-btn"
                       onClick={() => onClaimClick && onClaimClick(ping)}
@@ -183,7 +262,6 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
                       ✋ I Found This
                     </button>
                   ) : typeUpper === "FOUND" ? (
-                    // 🟪 Non-owner viewing FOUND item -> "This Is Mine"
                     <button
                       className="connect-btn claim-btn"
                       onClick={() => onClaimClick && onClaimClick(ping)}
@@ -200,7 +278,6 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
                       🙋 This Is Mine
                     </button>
                   ) : cleanPhone ? (
-                    // 🟩 Urgent Help / Direct Whatsapp Connect
                     <a
                       href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hi, saw your alert on NearPing: "${ping.title}"`)}`}
                       target="_blank"
