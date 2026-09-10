@@ -9,7 +9,6 @@ import "./MapView.css";
 
 const socket = io("http://localhost:5000");
 
-// Helper: Alert Type ke hisab se Color choose karne ke liye
 const getAlertTheme = (type = "") => {
   const alertType = String(type).toUpperCase();
   if (alertType === "FOUND") {
@@ -22,7 +21,6 @@ const getAlertTheme = (type = "") => {
 
 const createCustomIcon = (type = "") => {
   const theme = getAlertTheme(type);
-
   return L.divIcon({
     className: "custom-leaflet-marker",
     html: `
@@ -77,7 +75,7 @@ const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
         const res = await axios.get(
           `http://localhost:5000/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=50000`
         );
-        setPings(res.data);
+        setPings(res.data.filter(ping => ping.status !== "RESOLVED"));
       } catch (err) {
         console.error("Map fetch error:", err);
       }
@@ -85,11 +83,25 @@ const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
     fetchPings();
   }, [coords]);
 
+  // Real-time socket synchronization for markers
   useEffect(() => {
     socket.on("new-ping", (newPing) => {
       setPings((prev) => [newPing, ...prev]);
     });
-    return () => socket.off("new-ping");
+
+    socket.on("ping-resolved", ({ pingId }) => {
+      setPings((prev) => prev.filter((p) => p._id !== pingId));
+    });
+
+    socket.on("ping-deleted", ({ pingId }) => {
+      setPings((prev) => prev.filter((p) => p._id !== pingId));
+    });
+
+    return () => {
+      socket.off("new-ping");
+      socket.off("ping-resolved");
+      socket.off("ping-deleted");
+    };
   }, []);
 
   const handleMapClick = (latlng) => {
@@ -108,7 +120,6 @@ const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
   return (
     <div className="map-container-wrapper">
       <MapContainer center={[coords.lat, coords.lng]} zoom={13} style={{ height: "100%", width: "100%" }}>
-        {/* Guaranteed Reliable Tile Layer */}
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -117,19 +128,16 @@ const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
         
         <MapClickHandler onMapClick={handleMapClick} />
 
-        {/* Current User Location */}
         <Marker position={[coords.lat, coords.lng]} icon={userIcon}>
           <Popup>📍 Aap Yahan Hain</Popup>
         </Marker>
 
-        {/* Temporary Selected Location Marker */}
         {selectedLocation && (
           <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={tempSelectedIcon}>
             <Popup>🎯 New Alert Location</Popup>
           </Marker>
         )}
 
-        {/* Active Broadcast Pings + Radar Circles */}
         {pings.map((ping) => {
           const lat = ping.location?.coordinates?.[1];
           const lng = ping.location?.coordinates?.[0];

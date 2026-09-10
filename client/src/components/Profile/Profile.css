@@ -1,0 +1,134 @@
+.profile-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.profile-modal-content {
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 90%;
+  max-width: 480px;
+  border-radius: 16px;
+  padding: 24px;
+  color: #fff;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.profile-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.profile-avatar {
+  font-size: 3rem;
+  background: #1f2937;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin: 0 auto 10px auto;
+  border: 2px solid #3b82f6;
+}
+
+.profile-email {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.profile-stats-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: #1f2937;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.stat-card h3 {
+  font-size: 1.4rem;
+  color: #3b82f6;
+  margin-bottom: 4px;
+}
+
+.stat-card p {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.profile-pings-list {
+  grid-column: span 3;
+  margin-top: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.profile-pings-list h3 {
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+
+.profile-ping-item {
+  background: #1f2937;
+  padding: 10px 12px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.profile-ping-item.resolved {
+  opacity: 0.7;
+}
+
+.status-tag {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.status-tag.blue {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.status-tag.green {
+  background: #10b981;
+  color: #fff;
+}
+
+.no-pings-text {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  text-align: center;
+}

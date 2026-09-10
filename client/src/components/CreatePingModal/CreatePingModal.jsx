@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from "react";
 import axios from "axios";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css"; // 👈 IMPORTANT: Fixes crushed map height!
+import "leaflet/dist/leaflet.css"; 
 import { LocationContext } from "../../context/LocationContext";
 import "./CreatePingModal.css";
 
@@ -73,8 +73,14 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
   const [contactInfo, setContactInfo] = useState("");
   const [broadcastRadius, setBroadcastRadius] = useState(5);
   const [description, setDescription] = useState("");
-  const [loading, setLoading] = useState(false);
+  
+  // 🔍 New Matchable Attributes States
+  const [brand, setBrand] = useState("");
+  const [color, setColor] = useState("");
+  const [serialNumber, setSerialNumber] = useState("");
+  const [image, setImage] = useState("");
 
+  const [loading, setLoading] = useState(false);
   const [pinCoords, setPinCoords] = useState({ lat: null, lng: null });
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -96,6 +102,10 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
     setContactInfo("");
     setBroadcastRadius(5);
     setDescription("");
+    setBrand("");
+    setColor("");
+    setSerialNumber("");
+    setImage("");
     setSearchQuery("");
     setSearchResults([]);
   };
@@ -103,6 +113,18 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  // Convert uploaded image to Base64 so it can easily save via JSON API
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSearchChange = async (e) => {
@@ -161,6 +183,10 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
           broadcastRadius: Number(broadcastRadius),
           type: type,
           category: type,
+          brand,
+          color,
+          serialNumber,
+          image,
           latitude: pinCoords.lat,
           longitude: pinCoords.lng,
         },
@@ -169,7 +195,6 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
         }
       );
 
-      // 💾 STEP 1 FIX: Save created Alert ID in LocalStorage for ownership tracking
       const createdPing = res.data;
       const createdPingId = createdPing?._id || createdPing?.id || createdPing?.ping?._id;
 
@@ -201,7 +226,6 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
-          {/* 🔍 Search Input */}
           <div className="form-group search-input-wrapper">
             <label>🔍 Search Location</label>
             <input
@@ -222,12 +246,10 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
             )}
           </div>
 
-          {/* Location Badge */}
           <div className="location-badge">
             📍 Spot: <span>{pinCoords.lat?.toFixed(4)}, {pinCoords.lng?.toFixed(4)}</span>
           </div>
 
-          {/* Mini Map Container */}
           {pinCoords.lat && pinCoords.lng && (
             <div className="mini-map-box">
               <MapContainer
@@ -273,6 +295,51 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
               onChange={(e) => setTitle(e.target.value)}
               required
             />
+          </div>
+
+          {/* 🏷️ Matchable Specification Inputs */}
+          <div className="form-row">
+            <div className="form-group flex-1">
+              <label>Brand / Company</label>
+              <input
+                type="text"
+                placeholder="e.g., Apple, Samsung, Nike"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group flex-1">
+              <label>Color</label>
+              <input
+                type="text"
+                placeholder="e.g., Matte Black, Red"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group flex-1">
+              <label>Serial Number / ID (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g., IMEI or unique mark"
+                value={serialNumber}
+                onChange={(e) => setSerialNumber(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group flex-1">
+              <label>🖼️ Upload Photo</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{ fontSize: '0.8rem', padding: '6px' }}
+              />
+            </div>
           </div>
 
           <div className="form-row">

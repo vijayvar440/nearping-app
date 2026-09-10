@@ -1,45 +1,29 @@
-/* ==========================================
-   1. HEADER BASE & STICKY CONTAINER
-   ========================================== */
-.app-header, 
-.navbar {
+.app-header {
+  background: #111827;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: sticky;
   top: 0;
   z-index: 1000;
-  width: 100%;
-  background-color: #0d1117;
-  border-bottom: 1px solid #1f2937;
-  padding: 10px 20px;
-  box-sizing: border-box;
+  padding: 8px 16px;
   backdrop-filter: blur(8px);
 }
 
 .header-container {
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  align-items: center;
 }
 
-/* ==========================================
-   2. BRAND & LOGO
-   ========================================== */
-.brand-logo, 
-.logo-container {
+.brand-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-  text-decoration: none;
-  cursor: pointer;
+  gap: 8px;
 }
 
 .logo-icon {
   font-size: 1.5rem;
-  display: flex;
-  align-items: center;
 }
 
 .brand-text-group {
@@ -48,257 +32,118 @@
 }
 
 .logo-text {
-  font-size: 1.3rem;
-  font-weight: 900;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #ef4444, #818cf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  line-height: 1.1;
-  white-space: nowrap;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
 }
 
 .logo-tagline {
   font-size: 0.65rem;
-  color: #6b7280;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-/* ==========================================
-   3. STATUS BADGE (PULSE INDICATOR)
-   ========================================== */
-.status-badge {
+.header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #111827;
-  border: 1px solid #1f2937;
-  padding: 6px 14px;
-  border-radius: 9999px;
 }
 
-.status-text {
-  font-size: 0.75rem;
+.post-alert-cta {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 20px;
   font-weight: 600;
-  color: #9ca3af;
-}
-
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #10b981;
-  border-radius: 50%;
-  box-shadow: 0 0 10px #10b981;
-  animation: pulse-glow 2s infinite;
-}
-
-@keyframes pulse-glow {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-
-/* ==========================================
-   4. ACTIONS & CTA BUTTONS
-   ========================================== */
-.header-actions, 
-.nav-actions {
+  font-size: 0.78rem;
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
+  gap: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.post-alert-cta, 
-.create-alert-btn, 
-.post-btn {
-  display: inline-flex;
+.post-alert-cta:hover {
+  background: #dc2626;
+}
+
+.icon-action-btn {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 0.825rem;
   cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  font-size: 0.85rem;
   transition: all 0.2s ease;
 }
 
-.post-alert-cta:hover, 
-.create-alert-btn:hover, 
-.post-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.5);
+.icon-action-btn:hover {
+  background: rgba(59, 130, 246, 0.3);
 }
 
-.post-alert-cta:active, 
-.create-alert-btn:active, 
-.post-btn:active {
-  transform: translateY(0);
-}
-
-.cta-icon {
-  font-size: 0.95rem;
-}
-
-/* ==========================================
-   5. USER PROFILE & AUTH
-   ========================================== */
-.user-profile-box, 
-.user-profile {
+.logout-icon-btn {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background-color: #1f2937;
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px solid #374151;
-}
-
-.user-name {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #a5b4fc;
-  max-width: 90px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.logout-btn {
-  background: transparent;
-  border: none;
-  color: #f87171;
-  font-size: 0.75rem;
-  font-weight: 600;
+  justify-content: center;
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.logout-btn:hover {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-}
-
-.login-btn {
-  background-color: #1f2937;
-  color: #f3f4f6;
-  border: 1px solid #374151;
-  padding: 7px 14px;
-  border-radius: 8px;
   font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.logout-icon-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #10b981;
+  animation: pulse-animation 1.5s infinite;
+}
+
+.status-text {
+  font-size: 0.7rem;
+  color: #34d399;
   font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
 }
 
-.login-btn:hover {
-  background-color: #374151;
-  color: #ffffff;
+@keyframes pulse-animation {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 10px #10b981; }
+  100% { transform: scale(0.95); opacity: 0.8; }
 }
 
-/* ==========================================
-   6. MOBILE RESPONSIVENESS
-   ========================================== */
-@media (max-width: 640px) {
-  .app-header, 
-  .navbar {
-    padding: 8px 12px;
-  }
-
-  .header-container {
-    gap: 8px;
-  }
-
-  .logo-icon {
-    font-size: 1.25rem;
-  }
-
-  .logo-text {
-    font-size: 1.05rem;
-  }
-
-  .logo-tagline, 
-  .status-badge {
+@media (max-width: 768px) {
+  .logo-tagline {
     display: none;
   }
-
-  .post-alert-cta, 
-  .create-alert-btn, 
-  .post-btn {
-    padding: 7px 10px;
-    font-size: 0.75rem;
-    gap: 4px;
-  }
-
-  .user-profile-box, 
-  .user-profile {
-    padding: 4px 8px;
-  }
-
-  .user-name {
-    max-width: 60px;
-  }
-}
-/* Mobile Responsive Fix (< 480px Screens) */
-@media (max-width: 480px) {
-  .app-header, 
-  .navbar {
-    padding: 8px 10px;
-  }
-
-  .header-container {
-    gap: 6px;
-    justify-content: space-between;
-  }
-
-  /* 1. Logo size shrink */
-  .logo-text {
-    font-size: 0.95rem;
-  }
-
-  .logo-icon {
-    font-size: 1.1rem;
-  }
-
-  .header-actions, 
-  .nav-actions {
-    gap: 6px;
-  }
-
-  /* 2. Post Alert Button compact styling */
-  .post-alert-cta, 
-  .create-alert-btn, 
-  .post-btn {
-    padding: 6px 8px;
-    font-size: 0.72rem;
-    gap: 3px;
-  }
-
-  /* 3. Login / Register Button compact styling */
-  .login-btn {
-    padding: 6px 8px;
-    font-size: 0.72rem;
-    letter-spacing: -0.2px;
-  }
-
-  .user-profile-box, 
-  .user-profile {
-    padding: 4px 6px;
-    gap: 4px;
-  }
-
-  .user-name {
-    max-width: 50px;
-    font-size: 0.7rem;
+  .status-text {
+    display: none;
   }
 }

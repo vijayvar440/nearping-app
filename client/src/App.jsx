@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useContext } from "react";
 import Header from "./components/Header/Header";
 import MapView from "./components/MapView/MapView";
-import PingFeed from "./components/PingFeed/PingFeed"; // Tabs wala code isi component mein integrated hai
+import PingFeed from "./components/PingFeed/PingFeed";
 import CreatePingModal from "./components/CreatePingModal/CreatePingModal";
 import AuthModal from "./components/AuthModal/AuthModal";
 import ClaimModal from "./components/ClaimModel/ClaimModal";
 import ClaimsListModal from "./components/ClaimModel/ClaimsListModal";
 import RadarAlertToast from "./components/RadarAlertToast/RadarAlertToast";
+import Profile from "./components/Profile/Profile";
 import { LocationContext } from "./context/LocationContext";
 import axios from "axios";
 import { io } from "socket.io-client";
@@ -17,22 +18,37 @@ const socket = io("http://localhost:5000");
 function App() {
   const { coords } = useContext(LocationContext);
   const [pings, setPings] = useState([]);
+  const [resolvedPings, setResolvedPings] = useState([]);
   const [radius, setRadius] = useState(5);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   
-  // 📍 Finder Claim Modal State
   const [selectedPingForClaim, setSelectedPingForClaim] = useState(null);
-
-  // 📍 Owner Check Claims Modal State
   const [selectedPingForViewClaims, setSelectedPingForViewClaims] = useState(null);
-
-  // 📍 Selected Location state for Map Clicks
   const [selectedLocation, setSelectedLocation] = useState(null);
 
-  // 🗑️ Delete Handler: React state se immediately alert remove karne ke liye
+  const getLoggedInUserId = () => {
+    try {
+      const savedUserData = localStorage.getItem("user") || localStorage.getItem("userInfo") || localStorage.getItem("authUser");
+      if (!savedUserData) return localStorage.getItem("userId");
+      
+      const parsed = JSON.parse(savedUserData);
+      return (
+        parsed?._id || 
+        parsed?.id || 
+        parsed?.user?._id || 
+        parsed?.user?.id || 
+        parsed?.data?._id
+      );
+    } catch (err) {
+      return null;
+    }
+  };
+
   const handleDeletePing = (deletedPingId) => {
     setPings((prevPings) => prevPings.filter((ping) => ping._id !== deletedPingId));
+    setResolvedPings((prevResolved) => prevResolved.filter((ping) => ping._id !== deletedPingId));
   };
 
   useEffect(() => {
@@ -43,8 +59,9 @@ function App() {
         const res = await axios.get(
           `http://localhost:5000/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=${radiusInMeters}`
         );
-        // Sirf active pings dikhayein
-        setPings(res.data.filter(ping => ping.status !== "RESOLVED"));
+        const allPings = res.data;
+        setPings(allPings.filter(ping => ping.status !== "RESOLVED"));
+        setResolvedPings(allPings.filter(ping => ping.status === "RESOLVED"));
       } catch (err) {
         console.error("App fetch error:", err);
       }
@@ -57,22 +74,46 @@ function App() {
       setPings((prev) => [newPing, ...prev]);
     });
 
-    // Live Hide Ping on Resolve
     socket.on("ping-resolved", ({ pingId }) => {
-      setPings((prev) => prev.filter((p) => p._id !== pingId));
+      setPings((prev) => {
+        const found = prev.find(p => p._id === pingId);
+        if (found) {
+          setResolvedPings(res => [{ ...found, status: "RESOLVED" }, ...res]);
+        }
+        return prev.filter((p) => p._id !== pingId);
+      });
     });
 
-    // Live Hide Ping on Delete (Real-time updates)
     socket.on("ping-deleted", ({ pingId }) => {
       setPings((prev) => prev.filter((p) => p._id !== pingId));
+      setResolvedPings((prev) => prev.filter((p) => p._id !== pingId));
+    });
+
+    socket.on("new-claim", (claimData) => {
+      const currentUserId = getLoggedInUserId();
+      const targetPingId = claimData.ping || claimData.pingId;
+
+      const matchedPing = pings.find(p => String(p._id) === String(targetPingId));
+      if (matchedPing) {
+        const ownerId = typeof matchedPing.user === "object" ? matchedPing.user?._id || matchedPing.user?.id : matchedPing.user;
+        const isLoggedInOwner = Boolean(currentUserId && ownerId && String(currentUserId).trim() === String(ownerId).trim());
+        
+        const myCreated = JSON.parse(localStorage.getItem("myCreatedPings") || "[]");
+        const isBrowserOwner = myCreated.includes(matchedPing._id);
+
+        if (isLoggedInOwner || isBrowserOwner) {
+          alert(`🔔 Naya Claim aaya hai aapke alert "${matchedPing.title}" par!`);
+        }
+      }
     });
 
     return () => {
       socket.off("new-ping");
       socket.off("ping-resolved");
       socket.off("ping-deleted");
+      socket.off("new-claim");
     };
-  }, []);
+  }, [pings]);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -81,12 +122,12 @@ function App() {
 
   return (
     <div className="app-root">
-      {/* 🚨 Live Geo-Fenced Radar Toast Notifications */}
       <RadarAlertToast />
 
       <Header
         onOpenModal={() => setIsModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenProfile={() => setIsProfileOpen(true)}
       />
 
       <main className="main-layout">
@@ -98,10 +139,10 @@ function App() {
           />
         </div>
 
-        {/* 📡 ALERTS SIDEBAR SECTION */}
         <div className="feed-section">
           <PingFeed 
             pings={pings} 
+            resolvedPings={resolvedPings}
             radius={radius} 
             setRadius={setRadius}
             onClaimClick={(ping) => setSelectedPingForClaim(ping)}
@@ -111,20 +152,22 @@ function App() {
         </div>
       </main>
 
-      {/* Alert Create Modal */}
       <CreatePingModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         selectedLocation={selectedLocation}
       />
 
-      {/* Login / Register Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
       />
 
-      {/* Finder Claim Modal */}
+      <Profile
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+      />
+
       {selectedPingForClaim && (
         <ClaimModal
           ping={selectedPingForClaim}
@@ -132,7 +175,6 @@ function App() {
         />
       )}
 
-      {/* Owner Claims List Modal */}
       {selectedPingForViewClaims && (
         <ClaimsListModal
           ping={selectedPingForViewClaims}
