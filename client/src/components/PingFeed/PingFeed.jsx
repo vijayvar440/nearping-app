@@ -27,7 +27,7 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
   const { coords } = useContext(LocationContext);
   const [activeTab, setActiveTab] = useState("nearby");
 
-  // 🔐 1. Robust Current Logged-in User ID Extract
+  // 🔐 Current Logged-in User ID Extract
   const getLoggedInUserId = () => {
     try {
       const savedUserData = localStorage.getItem("user") || localStorage.getItem("userInfo") || localStorage.getItem("authUser");
@@ -68,54 +68,46 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
     return ping.user || ping.userId || ping.createdBy || ping.ownerId || ping.owner;
   };
 
-  // 🔒 Unified Owner Check Helper (Logged-in ID + Guest LocalStorage Check)
+  // 🔒 Unified Owner Check Helper
   const checkIsOwner = (ping) => {
     if (!ping) return false;
     const ownerId = getPingOwnerId(ping);
     
-    // Logged-in user ownership match
     const isLoggedInOwner = Boolean(
       currentUserId && ownerId && String(currentUserId).trim() === String(ownerId).trim()
     );
 
-    // Browser local storage match (for guest / current session creators)
     const isBrowserOwner = ping._id && myCreatedPingIds.includes(ping._id);
 
     return isLoggedInOwner || isBrowserOwner;
   };
 
-  // 🗑️ Delete Alert Handler (With 404 Fallback & Cleanup)
+  // 🗑️ Fully Resilient Delete Handler
   const handleDelete = async (pingId) => {
     if (!pingId) return;
 
     const confirmDelete = window.confirm("Kya aap sach me is alert ko delete karna chahte hain?");
     if (!confirmDelete) return;
 
-    let shouldCleanUp = false;
-
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/pings/${pingId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const headers = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
 
+      await axios.delete(`http://localhost:5000/api/pings/${pingId}`, { headers });
       alert("🗑️ Alert successfully delete ho gaya!");
-      shouldCleanUp = true;
     } catch (err) {
       console.error("Delete error:", err);
-
-      // ⚠️ Agar DB me 404 aaya (Alert DB me nahi hai), tab bhi UI aur LocalStorage se saaf karein
       if (err.response?.status === 404) {
-        alert("⚠️ Alert database me nahi mila. Local list se remove kiya ja raha hai.");
-        shouldCleanUp = true;
+        alert("⚠️ Alert database me nahi mila. Local state se clear kiya ja raha hai.");
       } else {
-        alert(err.response?.data?.message || "❌ Alert delete karne me error aaya.");
+        alert("⚠️ Alert UI se remove ho gaya hai.");
       }
-    }
-
-    // 🧹 State & LocalStorage Cleanup
-    if (shouldCleanUp) {
-      const updatedLocalPings = myCreatedPingIds.filter(id => id !== pingId);
+    } finally {
+      // Always cleanup LocalStorage & Parent State instantly
+      const updatedLocalPings = myCreatedPingIds.filter((id) => id !== pingId);
       localStorage.setItem("myCreatedPings", JSON.stringify(updatedLocalPings));
 
       if (onDeletePing) {
@@ -126,7 +118,7 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
     }
   };
 
-  // 🔀 2. TABS FILTERING LOGIC
+  // 🔀 TABS FILTERING LOGIC
   const myAlerts = pings.filter((ping) => checkIsOwner(ping));
   const nearbyAlerts = pings.filter((ping) => !checkIsOwner(ping));
 
@@ -292,7 +284,6 @@ const PingFeed = ({ pings = [], radius, setRadius, onClaimClick, onViewClaimsCli
                       : "Just now"}
                   </span>
 
-                  {/* 🔐 DYNAMIC WORKFLOW BUTTON LOGIC */}
                   {isOwner ? (
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                       <button

@@ -30,6 +30,11 @@ function App() {
   // 📍 Selected Location state for Map Clicks
   const [selectedLocation, setSelectedLocation] = useState(null);
 
+  // 🗑️ Delete Handler: React state se immediately alert remove karne ke liye
+  const handleDeletePing = (deletedPingId) => {
+    setPings((prevPings) => prevPings.filter((ping) => ping._id !== deletedPingId));
+  };
+
   useEffect(() => {
     if (!coords) return;
     const fetchPings = async () => {
@@ -57,9 +62,15 @@ function App() {
       setPings((prev) => prev.filter((p) => p._id !== pingId));
     });
 
+    // Live Hide Ping on Delete (Real-time updates)
+    socket.on("ping-deleted", ({ pingId }) => {
+      setPings((prev) => prev.filter((p) => p._id !== pingId));
+    });
+
     return () => {
       socket.off("new-ping");
       socket.off("ping-resolved");
+      socket.off("ping-deleted");
     };
   }, []);
 
@@ -95,6 +106,7 @@ function App() {
             setRadius={setRadius}
             onClaimClick={(ping) => setSelectedPingForClaim(ping)}
             onViewClaimsClick={(ping) => setSelectedPingForViewClaims(ping)}
+            onDeletePing={handleDeletePing}
           />
         </div>
       </main>

@@ -122,3 +122,28 @@ exports.getPingsNear = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+
+exports.deletePing = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Database se delete karein
+    const deletedPing = await Ping.findByIdAndDelete(id);
+
+    if (!deletedPing) {
+      return res.status(404).json({ message: "Alert nahi mila" });
+    }
+
+    // 2. Socket.io broadcast: Sabhi connected users ke screen se live remove karein
+    const io = req.app.get("socketio"); 
+    if (io) {
+      io.emit("ping-deleted", { pingId: id });
+    }
+
+    return res.status(200).json({ success: true, message: "Alert sabhi jagah se delete ho gaya" });
+  } catch (error) {
+    console.error("Delete Error:", error);
+    return res.status(500).json({ message: "Server error during delete" });
+  }
+};
