@@ -13,11 +13,11 @@ const socket = io("http://localhost:5000");
 const getAlertTheme = (type = "") => {
   const alertType = String(type).toUpperCase();
   if (alertType === "FOUND") {
-    return { color: "#10B981", fillColor: "#34D399", emoji: "🎁" }; // Green
+    return { color: "#10B981", fillColor: "#34D399", emoji: "🎁" };
   } else if (alertType === "URGENT_HELP" || alertType.includes("HELP")) {
-    return { color: "#F59E0B", fillColor: "#FBBF24", emoji: "🚨" }; // Orange/Yellow
+    return { color: "#F59E0B", fillColor: "#FBBF24", emoji: "🚨" };
   }
-  return { color: "#EF4444", fillColor: "#F87171", emoji: "🔍" }; // Red (Default Lost)
+  return { color: "#EF4444", fillColor: "#F87171", emoji: "🔍" };
 };
 
 const createCustomIcon = (type = "") => {
@@ -26,7 +26,7 @@ const createCustomIcon = (type = "") => {
   return L.divIcon({
     className: "custom-leaflet-marker",
     html: `
-      <div class="marker-pin" style="background-color: ${theme.color}">
+      <div class="marker-pin" style="background-color: ${theme.color}; box-shadow: 0 0 12px ${theme.color};">
         <span>${theme.emoji}</span>
       </div>
     `,
@@ -42,10 +42,9 @@ const userIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
-// Selected Location Marker Icon (for New Alert)
 const tempSelectedIcon = L.divIcon({
   className: "selected-leaflet-marker",
-  html: `<div style="font-size: 24px;">📍</div>`,
+  html: `<div style="font-size: 26px; filter: drop-shadow(0 0 6px #ef4444);">📍</div>`,
   iconSize: [30, 30],
   iconAnchor: [15, 30],
 });
@@ -58,7 +57,6 @@ const MapRecenter = ({ coords }) => {
   return null;
 };
 
-// 📍 Map Click Handler Listener
 const MapClickHandler = ({ onMapClick }) => {
   useMapEvents({
     click(e) {
@@ -94,7 +92,6 @@ const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
     return () => socket.off("new-ping");
   }, []);
 
-  // Map Click Function
   const handleMapClick = (latlng) => {
     setSelectedLocation(latlng);
     if (setIsModalOpen) setIsModalOpen(true);
@@ -111,10 +108,13 @@ const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
   return (
     <div className="map-container-wrapper">
       <MapContainer center={[coords.lat, coords.lng]} zoom={13} style={{ height: "100%", width: "100%" }}>
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        {/* Guaranteed Reliable Tile Layer */}
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        />
         <MapRecenter coords={coords} />
         
-        {/* Map Click Listener */}
         <MapClickHandler onMapClick={handleMapClick} />
 
         {/* Current User Location */}
@@ -136,31 +136,29 @@ const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
           if (!lat || !lng) return null;
 
           const theme = getAlertTheme(ping.type);
-          const radiusInMeters = (ping.broadcastRadius || 5) * 1000; // KM to meters conversion
+          const radiusInMeters = (ping.broadcastRadius || 5) * 1000;
 
           return (
             <React.Fragment key={ping._id || Math.random()}>
-              {/* 📡 Radar Coverage Circle */}
               <Circle
                 center={[lat, lng]}
                 radius={radiusInMeters}
                 pathOptions={{
                   color: theme.color,
                   fillColor: theme.fillColor,
-                  fillOpacity: 0.15,
-                  dashArray: "6, 6",
+                  fillOpacity: 0.18,
+                  dashArray: "8, 8",
                   weight: 2,
                 }}
               />
 
-              {/* 📍 Incident Marker */}
               <Marker position={[lat, lng]} icon={createCustomIcon(ping.type)}>
                 <Popup>
                   <div className="popup-content">
-                    <strong style={{ fontSize: "14px", color: "#1F2937" }}>{ping.title}</strong>
-                    <p style={{ margin: "4px 0", fontSize: "12px", color: "#4B5563" }}>{ping.description}</p>
+                    <strong>{ping.title}</strong>
+                    <p>{ping.description}</p>
                     <div style={{ marginTop: "6px", fontSize: "11px", fontWeight: "bold", color: theme.color }}>
-                      📡 Active Radius: {ping.broadcastRadius || 5} KM
+                      📡 Coverage: {ping.broadcastRadius || 5} KM
                     </div>
                   </div>
                 </Popup>

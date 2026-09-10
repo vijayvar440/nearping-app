@@ -1,0 +1,77 @@
+.radar-toast-banner {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: #1e1e2d;
+  color: #ffffff;
+  border-left: 5px solid #ef4444;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  max-width: 360px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #ef4444;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.toast-body {
+  margin: 8px 0 4px 0;
+  font-size: 14px;
+}
+
+.highlight-dist {
+  color: #f59e0b;
+  font-weight: bold;
+}
+
+.toast-landmark {
+  font-size: 12px;
+  color: #a1a1aa;
+  margin-bottom: 12px;
+}
+
+.toast-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-view {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-close {
+  background: transparent;
+  color: #a1a1aa;
+  border: 1px solid #3f3f46;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
