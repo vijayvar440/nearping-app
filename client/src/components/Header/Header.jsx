@@ -41,48 +41,48 @@ const Header = ({ onOpenModal, onOpenAuthModal, onOpenProfile }) => {
             <span>Alert</span>
           </button>
 
-          {/* User Logged In / Out Icon Controls */}
+          {/* Profile Button (Hamesha dikhega) */}
+          <button 
+            onClick={onOpenProfile}
+            title="My Profile & Posts"
+            style={{
+              background: 'rgba(59, 130, 246, 0.15)',
+              color: '#60a5fa',
+              border: '1px solid rgba(59, 130, 246, 0.4)',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '0.85rem'
+            }}
+          >
+            👤
+          </button>
+
+          {/* Login / Logout Toggle */}
           {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <button 
-                onClick={onOpenProfile}
-                title={user.name || "My Profile"}
-                style={{
-                  background: 'rgba(59, 130, 246, 0.15)',
-                  color: '#60a5fa',
-                  border: '1px solid rgba(59, 130, 246, 0.4)',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem'
-                }}
-              >
-                👤
-              </button>
-              <button 
-                onClick={logout}
-                title="Logout"
-                style={{
-                  background: 'rgba(239, 68, 68, 0.15)',
-                  color: '#f87171',
-                  border: '1px solid rgba(239, 68, 68, 0.4)',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem'
-                }}
-              >
-                🚪
-              </button>
-            </div>
+            <button 
+              onClick={logout}
+              title="Logout"
+              style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                color: '#f87171',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '0.8rem'
+              }}
+            >
+              🚪
+            </button>
           ) : (
             <button 
               onClick={onOpenAuthModal}

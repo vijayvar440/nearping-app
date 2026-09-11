@@ -28,10 +28,28 @@ const AuthModal = ({ isOpen, onClose }) => {
     setLoading(true);
 
     const endpoint = isLoginView ? "/api/auth/login" : "/api/auth/register";
+    
+    const payload = isLoginView 
+      ? { email: formData.email, password: formData.password }
+      : formData;
 
     try {
-      const res = await axios.post(`http://localhost:5000${endpoint}`, formData);
-      login(res.data.user, res.data.token);
+      const res = await axios.post(`http://localhost:5000${endpoint}`, payload);
+      
+      // Extract token and user data robustly for any backend response layout
+      const token = res.data.token || res.data.accessToken;
+      const userObj = res.data.user || res.data.data || res.data;
+
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+      if (userObj) {
+        // Save to both keys so any component can read it seamlessly
+        localStorage.setItem("user", JSON.stringify(userObj));
+        localStorage.setItem("userInfo", JSON.stringify(userObj));
+      }
+
+      login(userObj, token);
       onClose();
     } catch (err) {
       setErrorMsg(err.response?.data?.message || "Something went wrong. Please try again.");

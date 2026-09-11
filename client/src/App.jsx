@@ -15,6 +15,16 @@ import "./App.css";
 
 const socket = io("http://localhost:5000");
 
+// 🔊 Notification Sound Play Function
+const playAlertSound = (isEmergency) => {
+  const soundUrl = isEmergency 
+    ? "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" // Emergency Loud Alert Sound
+    : "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"; // Normal Notification Sound
+    
+  const audio = new Audio(soundUrl);
+  audio.play().catch(err => console.log("Audio play blocked by browser policy:", err));
+};
+
 function App() {
   const { coords } = useContext(LocationContext);
   const [pings, setPings] = useState([]);
@@ -52,6 +62,13 @@ function App() {
   };
 
   useEffect(() => {
+    // Browser Notification Permission request
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  useEffect(() => {
     if (!coords) return;
     const fetchPings = async () => {
       try {
@@ -72,6 +89,17 @@ function App() {
   useEffect(() => {
     socket.on("new-ping", (newPing) => {
       setPings((prev) => [newPing, ...prev]);
+
+      // 🚨 Trigger Sound and Push Notification for other devices/users
+      const isEmergency = newPing.alertType === "EMERGENCY";
+      playAlertSound(isEmergency);
+
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(isEmergency ? "🚨 EMERGENCY ALERT!" : "📡 Naya Radar Alert", {
+          body: `${newPing.title} - ${newPing.landmark || "Location check karein"}`,
+          icon: "/favicon.ico"
+        });
+      }
     });
 
     socket.on("ping-resolved", ({ pingId }) => {

@@ -65,16 +65,27 @@ function ResetMapButton({ userCoords, setPin }) {
   );
 }
 
+// 🔊 Notification Sound Play Function
+const playAlertSound = (isEmergency) => {
+  const soundUrl = isEmergency 
+    ? "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" // Emergency Loud Alert Sound
+    : "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"; // Normal Notification Sound
+    
+  const audio = new Audio(soundUrl);
+  audio.play().catch(err => console.log("Audio play blocked by browser policy:", err));
+};
+
 const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
   const { coords } = useContext(LocationContext);
   const [title, setTitle] = useState("");
   const [type, setType] = useState("LOST");
+  const [alertType, setAlertType] = useState("NORMAL"); // 🚨 New Alert Priority State
   const [landmark, setLandmark] = useState("");
   const [contactInfo, setContactInfo] = useState("");
   const [broadcastRadius, setBroadcastRadius] = useState(5);
   const [description, setDescription] = useState("");
   
-  // 🔍 New Matchable Attributes States
+  // 🔍 Matchable Attributes States
   const [brand, setBrand] = useState("");
   const [color, setColor] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
@@ -98,6 +109,7 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
   const resetForm = () => {
     setTitle("");
     setType("LOST");
+    setAlertType("NORMAL");
     setLandmark("");
     setContactInfo("");
     setBroadcastRadius(5);
@@ -115,7 +127,6 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
     onClose();
   };
 
-  // Convert uploaded image to Base64 so it can easily save via JSON API
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -169,6 +180,9 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
       return;
     }
 
+    // 🔊 Play Sound based on Priority
+    playAlertSound(alertType === "EMERGENCY");
+
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -181,8 +195,9 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
           landmark,
           contactInfo,
           broadcastRadius: Number(broadcastRadius),
-          type: type,
+          type,
           category: type,
+          alertType, // 🚨 Sending Priority Type to Backend
           brand,
           color,
           serialNumber,
@@ -206,7 +221,7 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
         }
       }
 
-      alert(`🚀 Alert broadcasted within ${broadcastRadius} KM radius!`);
+      alert(`🚀 ${alertType === "EMERGENCY" ? "🚨 EMERGENCY" : "📡"} Alert broadcasted within ${broadcastRadius} KM radius!`);
       setLoading(false);
       resetForm();
       onClose();
@@ -275,6 +290,17 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
               </select>
             </div>
 
+            {/* 🚨 New Alert Priority Selector */}
+            <div className="form-group flex-1">
+              <label>Alert Priority</label>
+              <select className="modal-select" value={alertType} onChange={(e) => setAlertType(e.target.value)}>
+                <option value="NORMAL">🟢 Normal Alert</option>
+                <option value="EMERGENCY">🚨 Emergency (High Sound)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
             <div className="form-group flex-1">
               <label>Range</label>
               <select className="modal-select" value={broadcastRadius} onChange={(e) => setBroadcastRadius(e.target.value)}>
@@ -284,17 +310,17 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
                 <option value="25">📡 25 KM</option>
               </select>
             </div>
-          </div>
 
-          <div className="form-group">
-            <label>Title</label>
-            <input
-              type="text"
-              placeholder="e.g., Black Wallet / Golden Retriever"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
+            <div className="form-group flex-1">
+              <label>Title</label>
+              <input
+                type="text"
+                placeholder="e.g., Black Wallet / Golden Retriever"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
           {/* 🏷️ Matchable Specification Inputs */}
