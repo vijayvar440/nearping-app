@@ -34,7 +34,7 @@ const AuthModal = ({ isOpen, onClose }) => {
       : formData;
 
     try {
-      const res = await axios.post(`http://localhost:5000${endpoint}`, payload);
+      const res = await axios.post(`https://nearping-app.onrender.com${endpoint}`, payload);
       
       // Extract token and user data robustly for any backend response layout
       const token = res.data.token || res.data.accessToken;

@@ -99,7 +99,7 @@ const PingFeed = ({
         headers.Authorization = `Bearer ${token}`;
       }
 
-      await axios.delete(`http://localhost:5000/api/pings/${pingId}`, { headers });
+      await axios.delete(`https://nearping-app.onrender.com/api/pings/${pingId}`, { headers });
       alert("🗑️ Alert successfully delete ho gaya!");
     } catch (err) {
       console.error("Delete error:", err);

@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import { LocationContext } from "../../context/LocationContext";
 import "./RadarAlertToast.css"; // Simple Toast Styling
 
-const socket = io("http://localhost:5000");
+const socket = io("https://nearping-app.onrender.com");
 
 // 📐 Haversine Formula: Distance calculate karne ke liye (in KM)
 const calculateDistance = (lat1, lon1, lat2, lon2) => {

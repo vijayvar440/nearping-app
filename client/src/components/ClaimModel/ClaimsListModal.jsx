@@ -8,7 +8,7 @@ const ClaimsListModal = ({ ping, onClose, onClaimAccepted }) => {
   useEffect(() => {
     const fetchClaims = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/claims/ping/${ping._id}`);
+        const res = await axios.get(`https://nearping-app.onrender.com/api/claims/ping/${ping._id}`);
         setClaims(res.data);
       } catch (err) {
         console.error("Error fetching claims:", err);
@@ -21,7 +21,7 @@ const ClaimsListModal = ({ ping, onClose, onClaimAccepted }) => {
 
   const handleAccept = async (claimId) => {
     try {
-      const res = await axios.patch(`http://localhost:5000/api/claims/${claimId}/accept`);
+      const res = await axios.patch(`https://nearping-app.onrender.com/api/claims/${claimId}/accept`);
       if (res.data.success) {
         alert("🎉 Claim Accepted! Finder contact details unlocked.");
         if (onClaimAccepted) onClaimAccepted(res.data);

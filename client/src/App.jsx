@@ -13,7 +13,7 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import "./App.css";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://nearping-app.onrender.com");
 
 // 🔊 Notification Sound Play Function
 const playAlertSound = (isEmergency) => {
@@ -74,7 +74,7 @@ function App() {
       try {
         const radiusInMeters = radius * 1000;
         const res = await axios.get(
-          `http://localhost:5000/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=${radiusInMeters}`
+          `https://nearping-app.onrender.com/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=${radiusInMeters}`
         );
         const allPings = res.data;
         setPings(allPings.filter(ping => ping.status !== "RESOLVED"));

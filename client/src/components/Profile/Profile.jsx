@@ -34,7 +34,7 @@ const Profile = ({ isOpen, onClose }) => {
 
         if (token) {
           try {
-            const res = await axios.get("http://localhost:5000/api/users/profile", {
+            const res = await axios.get("https://nearping-app.onrender.com/api/users/profile", {
               headers: { Authorization: `Bearer ${token}` }
             });
             console.log("Profile API Response:", res.data); // F12 console me check karne ke liye
@@ -49,7 +49,7 @@ const Profile = ({ isOpen, onClose }) => {
           }
         }
 
-        const pingsRes = await axios.get("http://localhost:5000/api/pings/near?latitude=0&longitude=0&radius=1000000");
+        const pingsRes = await axios.get("https://nearping-app.onrender.com/api/pings/near?latitude=0&longitude=0&radius=1000000");
         const myCreatedIds = JSON.parse(localStorage.getItem("myCreatedPings") || "[]");
         
         const myPings = pingsRes.data.filter(ping => {

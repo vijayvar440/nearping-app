@@ -7,7 +7,7 @@ import { io } from "socket.io-client";
 import { LocationContext } from "../../context/LocationContext";
 import "./MapView.css";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://nearping-app.onrender.com");
 
 const getAlertTheme = (type = "") => {
   const alertType = String(type).toUpperCase();
@@ -73,7 +73,7 @@ const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
     const fetchPings = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=50000`
+          `https://nearping-app.onrender.com/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=50000`
         );
         setPings(res.data.filter(ping => ping.status !== "RESOLVED"));
       } catch (err) {

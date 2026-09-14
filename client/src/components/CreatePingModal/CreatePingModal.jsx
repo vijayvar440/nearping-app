@@ -188,7 +188,7 @@ const CreatePingModal = ({ isOpen, onClose, selectedLocation }) => {
       const token = localStorage.getItem("token");
 
       const res = await axios.post(
-        "http://localhost:5000/api/pings",
+        "https://nearping-app.onrender.com/api/pings",
         {
           title,
           description,
