@@ -146,3 +146,62 @@
   padding: 24px 0;
   margin: 0;
 }
+
+/* 📱 MOBILE ALERTS RESPONSIVE */
+@media (max-width: 600px) {
+
+  .alerts-sidebar {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+    border-radius: 14px;
+    gap: 12px;
+  }
+
+  .tab-container {
+    width: 100%;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .tab-btn {
+    padding: 9px 6px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .alerts-list {
+    width: 100%;
+    max-height: none;
+    gap: 10px;
+    padding-right: 0;
+  }
+
+  .ping-card {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    gap: 7px;
+  }
+
+  .ping-card h3 {
+    font-size: 14px;
+  }
+
+  .ping-card p {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .btn-found,
+  .btn-delete {
+    width: 100%;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+
+  .no-alerts {
+    font-size: 12px;
+    padding: 20px 0;
+  }
+}

@@ -49,3 +49,27 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* 📱 MOBILE RESPONSIVE */
+@media (max-width: 600px) {
+
+  body {
+    overflow-x: hidden;
+  }
+
+  .app-root {
+    width: 100%;
+    padding-bottom: 20px;
+  }
+
+  .main-layout {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 8px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

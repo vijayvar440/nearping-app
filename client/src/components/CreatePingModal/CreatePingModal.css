@@ -292,3 +292,39 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* 📱 MOBILE RESPONSIVE */
+@media (max-width: 600px) {
+
+  .map-container-wrapper {
+    height: 360px;
+    width: 100%;
+    border-radius: 14px;
+  }
+
+  .map-loading-box {
+    height: 360px;
+  }
+
+  .leaflet-control-zoom a {
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    font-size: 22px !important;
+  }
+
+  .leaflet-container .leaflet-control-attribution {
+    font-size: 8px;
+  }
+
+  .marker-pin {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+  }
+
+  .user-pulse-dot {
+    width: 16px;
+    height: 16px;
+  }
+}
