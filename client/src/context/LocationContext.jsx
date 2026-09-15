@@ -7,33 +7,90 @@ export const LocationContext = createContext();
 export const LocationProvider = ({ children }) => {
   const [coords, setCoords] = useState(null);
 
+  // 📍 Get current location manually
+  const getCurrentLocation = async () => {
+    try {
+      // 📱 Android / iOS
+      if (Capacitor.isNativePlatform()) {
+        let permissions = await Geolocation.checkPermissions();
+
+        if (permissions.location !== "granted") {
+          permissions = await Geolocation.requestPermissions();
+        }
+
+        if (permissions.location !== "granted") {
+          console.warn("⚠️ Location permission denied");
+          return null;
+        }
+
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        });
+
+        const newCoords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        setCoords(newCoords);
+
+        return newCoords;
+      }
+
+      // 🌐 Browser
+      if (!navigator.geolocation) {
+        console.warn("⚠️ Geolocation not supported");
+        return null;
+      }
+
+      return await new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const newCoords = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+
+            setCoords(newCoords);
+            resolve(newCoords);
+          },
+          (error) => {
+            console.warn("⚠️ Browser GPS Error:", error.message);
+            resolve(null);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0,
+          }
+        );
+      });
+    } catch (error) {
+      console.error("❌ Get location error:", error);
+      return null;
+    }
+  };
+
+  // 🔄 Start location tracking
   useEffect(() => {
     let watchId = null;
 
     const startLocation = async () => {
       try {
-        // 📱 Android / iOS Capacitor app
         if (Capacitor.isNativePlatform()) {
-          // 🔐 Check current permission
           let permissions = await Geolocation.checkPermissions();
 
-          // Ask permission if not granted
-          if (
-            permissions.location !== "granted" &&
-            permissions.location !== "whileInUse"
-          ) {
+          if (permissions.location !== "granted") {
             permissions = await Geolocation.requestPermissions();
           }
 
-          if (
-            permissions.location !== "granted" &&
-            permissions.location !== "whileInUse"
-          ) {
-            console.warn("⚠️ Location permission denied.");
+          if (permissions.location !== "granted") {
+            console.warn("⚠️ Location permission denied");
             return;
           }
 
-          // 📍 Get current location immediately
           const current = await Geolocation.getCurrentPosition({
             enableHighAccuracy: true,
             timeout: 15000,
@@ -45,7 +102,6 @@ export const LocationProvider = ({ children }) => {
             lng: current.coords.longitude,
           });
 
-          // 🔄 Keep location updated
           watchId = await Geolocation.watchPosition(
             {
               enableHighAccuracy: true,
@@ -70,28 +126,8 @@ export const LocationProvider = ({ children }) => {
           return;
         }
 
-        // 🌐 Normal browser version
-        if (!("geolocation" in navigator)) {
-          console.warn("⚠️ Geolocation not supported.");
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setCoords({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            });
-          },
-          (error) => {
-            console.warn("⚠️ Browser GPS Error:", error.message);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0,
-          }
-        );
+        // 🌐 Browser
+        if (!navigator.geolocation) return;
 
         watchId = navigator.geolocation.watchPosition(
           (position) => {
@@ -128,7 +164,13 @@ export const LocationProvider = ({ children }) => {
   }, []);
 
   return (
-    <LocationContext.Provider value={{ coords, setCoords }}>
+    <LocationContext.Provider
+      value={{
+        coords,
+        setCoords,
+        getCurrentLocation,
+      }}
+    >
       {children}
     </LocationContext.Provider>
   );

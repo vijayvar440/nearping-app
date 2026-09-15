@@ -1,25 +1,32 @@
 import React, { useState, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
+import { LocationContext } from "../../context/LocationContext";
 import "./AuthModal.css";
 
 const AuthModal = ({ isOpen, onClose }) => {
   const { login } = useContext(AuthContext);
+  const { getCurrentLocation } = useContext(LocationContext);
+
   const [isLoginView, setIsLoginView] = useState(true);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     phone: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   if (!isOpen) return null;
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -27,32 +34,66 @@ const AuthModal = ({ isOpen, onClose }) => {
     setErrorMsg("");
     setLoading(true);
 
-    const endpoint = isLoginView ? "/api/auth/login" : "/api/auth/register";
-    
-    const payload = isLoginView 
-      ? { email: formData.email, password: formData.password }
-      : formData;
+    const endpoint = isLoginView
+      ? "/api/auth/login"
+      : "/api/auth/register";
 
     try {
-      const res = await axios.post(`https://nearping-app.onrender.com${endpoint}`, payload);
-      
-      // Extract token and user data robustly for any backend response layout
+      // 📍 Get current location
+      const currentLocation = await getCurrentLocation();
+
+      console.log("📍 Current Location:", currentLocation);
+
+      // Base payload
+      let payload;
+
+      if (isLoginView) {
+        payload = {
+          email: formData.email,
+          password: formData.password,
+        };
+      } else {
+        payload = {
+          ...formData,
+        };
+      }
+
+      // 📍 Add location only when GPS is available
+      if (currentLocation) {
+         payload.lat = currentLocation.lat;
+         payload.lng = currentLocation.lng;
+       }
+
+      console.log("📤 Auth Payload:", payload);
+
+      const res = await axios.post(
+        `https://nearping-app.onrender.com${endpoint}`,
+        payload
+      );
+
+      // Extract token and user data
       const token = res.data.token || res.data.accessToken;
       const userObj = res.data.user || res.data.data || res.data;
 
       if (token) {
         localStorage.setItem("token", token);
       }
+
       if (userObj) {
-        // Save to both keys so any component can read it seamlessly
         localStorage.setItem("user", JSON.stringify(userObj));
         localStorage.setItem("userInfo", JSON.stringify(userObj));
       }
 
       login(userObj, token);
+
       onClose();
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || "Something went wrong. Please try again.");
+      console.error("❌ Auth Error:", err);
+
+      setErrorMsg(
+        err.response?.data?.message ||
+          "Something went wrong. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -60,19 +101,40 @@ const AuthModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="auth-card" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="auth-card"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="auth-header">
-          <h2>{isLoginView ? "🔐 Account Sign In" : "📝 Create Account"}</h2>
-          <button className="close-btn" onClick={onClose}>✕</button>
+          <h2>
+            {isLoginView
+              ? "🔐 Account Sign In"
+              : "📝 Create Account"}
+          </h2>
+
+          <button
+            className="close-btn"
+            onClick={onClose}
+          >
+            ✕
+          </button>
         </div>
 
-        {errorMsg && <div className="auth-error">{errorMsg}</div>}
+        {errorMsg && (
+          <div className="auth-error">
+            {errorMsg}
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form
+          onSubmit={handleSubmit}
+          className="auth-form"
+        >
           {!isLoginView && (
             <>
               <div className="form-group">
                 <label>Full Name</label>
+
                 <input
                   type="text"
                   name="name"
@@ -85,6 +147,7 @@ const AuthModal = ({ isOpen, onClose }) => {
 
               <div className="form-group">
                 <label>Phone Number (WhatsApp)</label>
+
                 <input
                   type="text"
                   name="phone"
@@ -99,6 +162,7 @@ const AuthModal = ({ isOpen, onClose }) => {
 
           <div className="form-group">
             <label>Email Address</label>
+
             <input
               type="email"
               name="email"
@@ -111,6 +175,7 @@ const AuthModal = ({ isOpen, onClose }) => {
 
           <div className="form-group">
             <label>Password</label>
+
             <input
               type="password"
               name="password"
@@ -121,14 +186,25 @@ const AuthModal = ({ isOpen, onClose }) => {
             />
           </div>
 
-          <button type="submit" className="auth-submit-btn" disabled={loading}>
-            {loading ? "Processing..." : isLoginView ? "Sign In" : "Sign Up"}
+          <button
+            type="submit"
+            className="auth-submit-btn"
+            disabled={loading}
+          >
+            {loading
+              ? "Processing..."
+              : isLoginView
+              ? "Sign In"
+              : "Sign Up"}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
-            {isLoginView ? "New user?" : "Already have an account?"}{" "}
+            {isLoginView
+              ? "New user?"
+              : "Already have an account?"}{" "}
+
             <span
               className="toggle-link"
               onClick={() => {
@@ -136,7 +212,9 @@ const AuthModal = ({ isOpen, onClose }) => {
                 setIsLoginView(!isLoginView);
               }}
             >
-              {isLoginView ? "Register here" : "Sign In"}
+              {isLoginView
+                ? "Register here"
+                : "Sign In"}
             </span>
           </p>
         </div>

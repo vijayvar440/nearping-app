@@ -1,32 +1,27 @@
 * {
   box-sizing: border-box;
 }
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
-
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-}
 
 body {
   margin: 0;
   padding: 0;
   background-color: #030712;
   color: #f3f4f6;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 .app-root {
@@ -35,25 +30,27 @@ body {
 }
 
 .main-layout {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 16px;
+
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
   gap: 24px;
   align-items: start;
 }
 
+/* TABLET */
 @media (max-width: 900px) {
   .main-layout {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
-
-/* 📱 MOBILE RESPONSIVE */
+/* MOBILE */
 @media (max-width: 600px) {
-
   body {
     overflow-x: hidden;
   }
@@ -68,7 +65,7 @@ body {
     max-width: 100%;
     margin: 0;
     padding: 0 8px;
-    display: grid;
+
     grid-template-columns: 1fr;
     gap: 12px;
   }

@@ -1,136 +1,204 @@
-/* 📱 SIDEBAR CONTAINER */
+/* =========================
+   SIDEBAR
+========================= */
+
 .alerts-sidebar {
   width: 100%;
   max-width: 380px;
-  background-color: #0f111a;
+
+  background: #0f111a;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
+
   padding: 16px;
+
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* 🎛️ TAB BUTTONS */
+/* =========================
+   TABS
+========================= */
+
 .tab-container {
   display: flex;
   gap: 8px;
-  background-color: #1a1d29;
+
+  background: #1a1d29;
   padding: 6px;
+
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .tab-btn {
   flex: 1;
+
   padding: 10px 12px;
+
   background: transparent;
   color: #94a3b8;
+
   border: none;
   border-radius: 8px;
+
   font-weight: 600;
   font-size: 13px;
+
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+
+  transition: 0.2s ease;
 }
 
 .tab-btn:hover {
   color: #ffffff;
 }
 
+.tab-btn:active {
+  transform: scale(0.98);
+}
+
 .tab-btn.active {
-  background-color: #3b82f6;
+  background: #3b82f6;
   color: #ffffff;
+
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-/* 📜 ALERTS LIST SCROLLABLE AREA */
+/* =========================
+   ALERT LIST
+========================= */
+
 .alerts-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+
   max-height: 420px;
   overflow-y: auto;
+
   padding-right: 4px;
 }
 
-/* Scrollbar Customization */
 .alerts-list::-webkit-scrollbar {
   width: 5px;
 }
+
 .alerts-list::-webkit-scrollbar-thumb {
   background: #262b3d;
   border-radius: 10px;
 }
 
-/* 💳 CARD STYLES (Nearby Alerts) */
+/* =========================
+   ALERT CARD
+========================= */
+
 .ping-card {
-  background-color: #1e2230;
+  background: #1e2230;
+
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
+
   padding: 14px;
+
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .ping-card:hover {
   border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-}
 
-/* 👤 MY ALERT CARD (Highlighted) */
-.ping-card.my-card {
-  border: 1px solid #6366f1;
-  background: linear-gradient(145deg, #1c2035, #141624);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15);
+  transform: translateY(-2px);
+
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
 .ping-card h3 {
   color: #ffffff;
+
   font-size: 15px;
   font-weight: 600;
+
   margin: 0;
 }
 
 .ping-card p {
   color: #94a3b8;
+
   font-size: 13px;
-  margin: 0;
   line-height: 1.4;
+
+  margin: 0;
 }
 
-/* 🔘 ACTION BUTTONS */
-.btn-found {
+/* =========================
+   MY ALERT
+========================= */
+
+.ping-card.my-card {
+  border: 1px solid #6366f1;
+
+  background: linear-gradient(
+    145deg,
+    #1c2035,
+    #141624
+  );
+
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15);
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.btn-found,
+.btn-delete {
+  width: 100%;
+
   margin-top: 4px;
-  background-color: #f59e0b;
-  color: #000000;
-  border: none;
+
   border-radius: 8px;
-  padding: 8px 12px;
-  font-weight: 700;
+
+  padding: 9px 12px;
+
   font-size: 12px;
+  font-weight: 700;
+
   cursor: pointer;
-  transition: opacity 0.2s ease;
+
+  transition: 0.2s ease;
+}
+
+.btn-found {
+  background: #f59e0b;
+  color: #000000;
+
+  border: none;
 }
 
 .btn-found:hover {
   opacity: 0.9;
 }
 
+.btn-found:active,
+.btn-delete:active {
+  transform: scale(0.98);
+}
+
 .btn-delete {
-  margin-top: 4px;
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
+
   border: 1px solid rgba(239, 68, 68, 0.4);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-weight: 600;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .btn-delete:hover {
@@ -138,23 +206,32 @@
   color: #ffffff;
 }
 
-/* 📭 EMPTY STATE */
+/* =========================
+   EMPTY STATE
+========================= */
+
 .no-alerts {
   color: #64748b;
+
   font-size: 13px;
   text-align: center;
+
   padding: 24px 0;
   margin: 0;
 }
 
-/* 📱 MOBILE ALERTS RESPONSIVE */
-@media (max-width: 600px) {
+/* =========================
+   MOBILE
+========================= */
 
+@media (max-width: 600px) {
   .alerts-sidebar {
     width: 100%;
     max-width: 100%;
+
     padding: 12px;
     border-radius: 14px;
+
     gap: 12px;
   }
 
@@ -165,22 +242,27 @@
   }
 
   .tab-btn {
-    padding: 9px 6px;
+    padding: 10px 6px;
     font-size: 12px;
+
     white-space: nowrap;
   }
 
   .alerts-list {
     width: 100%;
+
     max-height: none;
+
     gap: 10px;
     padding-right: 0;
   }
 
   .ping-card {
     width: 100%;
+
     padding: 12px;
     border-radius: 10px;
+
     gap: 7px;
   }
 
@@ -196,8 +278,11 @@
   .btn-found,
   .btn-delete {
     width: 100%;
-    padding: 9px 10px;
+
+    padding: 10px;
+
     font-size: 12px;
+    min-height: 40px;
   }
 
   .no-alerts {
