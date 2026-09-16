@@ -1,5 +1,9 @@
 {
   "appId": "com.nearping.app",
   "appName": "NearPing",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "url": "https://nearping-app.vercel.app",
+    "cleartext": false
+  }
 }

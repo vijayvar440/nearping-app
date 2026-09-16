@@ -31,6 +31,7 @@ const AuthModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setErrorMsg("");
     setLoading(true);
 
@@ -39,10 +40,19 @@ const AuthModal = ({ isOpen, onClose }) => {
       : "/api/auth/register";
 
     try {
-      // 📍 Get current location
-      const currentLocation = await getCurrentLocation();
+      // 📍 Get current location safely
+      let currentLocation = null;
 
-      console.log("📍 Current Location:", currentLocation);
+      try {
+        currentLocation = await getCurrentLocation();
+
+        console.log("📍 Current Location:", currentLocation);
+      } catch (locationError) {
+        console.log(
+          "📍 Location not available:",
+          locationError
+        );
+      }
 
       // Base payload
       let payload;
@@ -58,35 +68,59 @@ const AuthModal = ({ isOpen, onClose }) => {
         };
       }
 
-      // 📍 Add location only when GPS is available
-      if (currentLocation) {
-         payload.lat = currentLocation.lat;
-         payload.lng = currentLocation.lng;
-       }
+      // 📍 Add location only when available
+      if (
+        currentLocation &&
+        currentLocation.lat !== undefined &&
+        currentLocation.lng !== undefined
+      ) {
+        payload.lat = currentLocation.lat;
+        payload.lng = currentLocation.lng;
+      }
 
       console.log("📤 Auth Payload:", payload);
 
+      // 🚀 Send request to Render backend
       const res = await axios.post(
         `https://nearping-app.onrender.com${endpoint}`,
         payload
       );
 
-      // Extract token and user data
-      const token = res.data.token || res.data.accessToken;
-      const userObj = res.data.user || res.data.data || res.data;
+      console.log("✅ Auth Response:", res.data);
 
+      // Extract token and user data
+      const token =
+        res.data.token || res.data.accessToken;
+
+      const userObj =
+        res.data.user ||
+        res.data.data ||
+        res.data;
+
+      // Save token
       if (token) {
         localStorage.setItem("token", token);
       }
 
+      // Save user
       if (userObj) {
-        localStorage.setItem("user", JSON.stringify(userObj));
-        localStorage.setItem("userInfo", JSON.stringify(userObj));
+        localStorage.setItem(
+          "user",
+          JSON.stringify(userObj)
+        );
+
+        localStorage.setItem(
+          "userInfo",
+          JSON.stringify(userObj)
+        );
       }
 
+      // Update AuthContext
       login(userObj, token);
 
+      // Close modal
       onClose();
+
     } catch (err) {
       console.error("❌ Auth Error:", err);
 
@@ -100,7 +134,10 @@ const AuthModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+    >
       <div
         className="auth-card"
         onClick={(e) => e.stopPropagation()}
@@ -146,7 +183,9 @@ const AuthModal = ({ isOpen, onClose }) => {
               </div>
 
               <div className="form-group">
-                <label>Phone Number (WhatsApp)</label>
+                <label>
+                  Phone Number (WhatsApp)
+                </label>
 
                 <input
                   type="text"
