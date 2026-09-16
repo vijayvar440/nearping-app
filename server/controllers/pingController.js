@@ -16,6 +16,7 @@ exports.createPing = async (req, res) => {
       latitude,
       longitude,
       broadcastRadius,
+      expiryHours,
       user
     } = req.body;
 
@@ -34,6 +35,7 @@ exports.createPing = async (req, res) => {
       location?.longitude ??
       location?.coordinates?.[0];
 
+    // ❌ Location validation
     if (
       rawLat === undefined ||
       rawLng === undefined ||
@@ -55,11 +57,18 @@ exports.createPing = async (req, res) => {
       ]
     };
 
-    // 📡 Broadcast radius
+    // 📡 Broadcast radius in KM
     const finalRadius = Number(broadcastRadius) || 5;
 
+    // ⏰ Alert Duration
+    const finalExpiryHours = Number(expiryHours) || 24;
+
+    // ⏰ Calculate exact expiry time
+    const expiresAt = new Date(
+      Date.now() + finalExpiryHours * 60 * 60 * 1000
+    );
+
     // 🚨 Create Ping
-    // expiresAt automatically comes from Ping model
     const newPing = new Ping({
       title,
       type: type || "LOST",
@@ -67,9 +76,17 @@ exports.createPing = async (req, res) => {
       landmark,
       contactInfo,
       secretQuestion: secretQuestion || "",
+
       location: formattedLocation,
+
+      // 📡 Radius
       broadcastRadius: finalRadius,
-      user: req.user?._id || user
+
+      // ⏰ Custom expiry
+      expiresAt,
+
+      // 👤 User
+      user: req.user?._id || req.user?.userId || user
     });
 
     await newPing.save();
@@ -84,6 +101,8 @@ exports.createPing = async (req, res) => {
 
     const nearbyMatches = await Ping.find({
       type: targetType,
+
+      // ✅ Only active alerts
       status: "ACTIVE",
 
       // ⏰ Expired alerts ko match nahi karna
@@ -92,6 +111,8 @@ exports.createPing = async (req, res) => {
       location: {
         $near: {
           $geometry: formattedLocation,
+
+          // 📡 Radius is already in KM
           $maxDistance: finalRadius * 1000
         }
       }
@@ -99,8 +120,10 @@ exports.createPing = async (req, res) => {
 
     // 📡 Socket Events
     if (io) {
+      // 🆕 New ping
       io.emit("new-ping", newPing);
 
+      // 🎯 Potential match
       if (nearbyMatches.length > 0) {
         io.emit("potential-match-found", {
           newPing,
@@ -109,6 +132,7 @@ exports.createPing = async (req, res) => {
       }
     }
 
+    // ✅ Response
     return res.status(201).json({
       success: true,
       ping: newPing,
@@ -131,20 +155,32 @@ exports.getPingsNear = async (req, res) => {
   try {
     const lng = req.query.lng || req.query.longitude;
     const lat = req.query.lat || req.query.latitude;
+
+    // 📡 Radius is in KM
     const radius = req.query.radius || req.query.rad || 5;
 
-    if (!lng || !lat) {
+    // ❌ Location validation
+    if (
+      lng === undefined ||
+      lat === undefined ||
+      isNaN(lng) ||
+      isNaN(lat)
+    ) {
       return res.status(400).json({
         error: "Latitude and Longitude are required"
       });
     }
+
+    const finalRadius = Number(radius) || 5;
 
     const pings = await Ping.find({
       // ✅ Only active alerts
       status: "ACTIVE",
 
       // ⏰ Only non-expired alerts
-      expiresAt: { $gt: new Date() },
+      expiresAt: {
+        $gt: new Date()
+      },
 
       location: {
         $near: {
@@ -155,7 +191,9 @@ exports.getPingsNear = async (req, res) => {
               parseFloat(lat)
             ]
           },
-          $maxDistance: parseFloat(radius) * 1000
+
+          // 📡 Convert KM → meters
+          $maxDistance: finalRadius * 1000
         }
       }
     })
@@ -189,7 +227,6 @@ exports.deletePing = async (req, res) => {
     }
 
     // 📡 Socket.io
-    // server.js me app.set("io", io) hai
     const io = req.app.get("io");
 
     if (io) {

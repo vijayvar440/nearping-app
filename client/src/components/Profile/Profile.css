@@ -1,134 +1,998 @@
+/* =========================================
+   PROFILE MODAL OVERLAY
+========================================= */
+
 .profile-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  inset: 0;
   z-index: 2000;
-  backdrop-filter: blur(4px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 15px;
+
+  background: rgba(2, 6, 23, 0.78);
+
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+
+  overflow-y: auto;
+
+  box-sizing: border-box;
 }
 
+
+/* =========================================
+   PROFILE MODAL
+========================================= */
+
 .profile-modal-content {
-  background: #111827;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  width: 90%;
-  max-width: 480px;
-  border-radius: 16px;
-  padding: 24px;
-  color: #fff;
   position: relative;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+
+  width: 100%;
+  max-width: 620px;
+
+  max-height: 92vh;
+
+  overflow-y: auto;
+
+  padding: 22px;
+
+  box-sizing: border-box;
+
+  background: #0f172a;
+
+  color: #e5e7eb;
+
+  border: 1px solid rgba(148, 163, 184, 0.18);
+
+  border-radius: 20px;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.45);
+
+  animation: profileModalOpen 0.2s ease-out;
 }
+
+
+/* Scrollbar */
+
+.profile-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.profile-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.profile-modal-content::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
+}
+
+
+/* =========================================
+   MODAL ANIMATION
+========================================= */
+
+@keyframes profileModalOpen {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+/* =========================================
+   CLOSE BUTTON
+========================================= */
 
 .profile-close-btn {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  background: transparent;
-  border: none;
-  color: #9ca3af;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
 
-.profile-header {
-  text-align: center;
-  margin-bottom: 20px;
-}
+  top: 12px;
+  right: 12px;
 
-.profile-avatar {
-  font-size: 3rem;
-  background: #1f2937;
-  width: 70px;
-  height: 70px;
+  width: 34px;
+  height: 34px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
+  border: 1px solid rgba(148, 163, 184, 0.18);
+
   border-radius: 50%;
-  margin: 0 auto 10px auto;
-  border: 2px solid #3b82f6;
+
+  background: rgba(148, 163, 184, 0.08);
+
+  color: #cbd5e1;
+
+  font-size: 24px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
 }
 
-.profile-email {
-  color: #9ca3af;
-  font-size: 0.9rem;
+.profile-close-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
 }
+
+
+/* =========================================
+   PROFILE HEADER
+========================================= */
+
+.profile-header {
+  padding: 20px;
+
+  background: #111c33;
+
+  border: 1px solid rgba(148, 163, 184, 0.13);
+
+  border-radius: 16px;
+
+  text-align: center;
+}
+
+
+/* =========================================
+   AVATAR
+========================================= */
+
+.profile-avatar {
+  width: 76px;
+  height: 76px;
+
+  margin: 0 auto 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #1d4ed8;
+
+  color: #ffffff;
+
+  font-size: 30px;
+  font-weight: 700;
+
+  border: 3px solid rgba(96, 165, 250, 0.3);
+
+  box-shadow: 0 5px 20px rgba(37, 99, 235, 0.18);
+}
+
+
+/* =========================================
+   NAME
+========================================= */
+
+.profile-header h2 {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 1.45rem;
+  font-weight: 700;
+
+  word-break: break-word;
+}
+
+
+/* =========================================
+   EMAIL
+========================================= */
+
+.profile-email {
+  margin: 6px 0 0;
+
+  color: #94a3b8;
+
+  font-size: 0.85rem;
+
+  word-break: break-word;
+}
+
+
+/* =========================================
+   PHONE
+========================================= */
+
+.profile-phone {
+  margin: 5px 0 0;
+
+  color: #64748b;
+
+  font-size: 0.82rem;
+}
+
+
+/* =========================================
+   PROFILE ACTIONS
+========================================= */
+
+.profile-actions {
+  display: flex;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  margin-top: 16px;
+
+  flex-wrap: wrap;
+}
+
+
+/* =========================================
+   EDIT BUTTON
+========================================= */
+
+.profile-edit-btn,
+.profile-password-btn {
+  padding: 9px 13px;
+
+  border-radius: 9px;
+
+  font-size: 0.78rem;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+
+.profile-edit-btn {
+  background: rgba(59, 130, 246, 0.14);
+
+  color: #60a5fa;
+
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.profile-edit-btn:hover {
+  background: rgba(59, 130, 246, 0.23);
+}
+
+
+.profile-password-btn {
+  background: rgba(168, 85, 247, 0.12);
+
+  color: #c084fc;
+
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.profile-password-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+}
+
+
+/* =========================================
+   SUCCESS MESSAGE
+========================================= */
+
+.profile-success-message {
+  margin-top: 12px;
+
+  padding: 10px 12px;
+
+  border-radius: 9px;
+
+  background: rgba(34, 197, 94, 0.1);
+
+  border: 1px solid rgba(34, 197, 94, 0.25);
+
+  color: #86efac;
+
+  font-size: 0.8rem;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================
+   ERROR MESSAGE
+========================================= */
+
+.profile-error-message {
+  margin-top: 12px;
+
+  padding: 10px 12px;
+
+  border-radius: 9px;
+
+  background: rgba(239, 68, 68, 0.1);
+
+  border: 1px solid rgba(239, 68, 68, 0.25);
+
+  color: #fca5a5;
+
+  font-size: 0.8rem;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================
+   FORM SECTION
+========================================= */
+
+.profile-form-section {
+  margin-top: 14px;
+
+  padding: 18px;
+
+  background: #111c33;
+
+  border: 1px solid rgba(148, 163, 184, 0.13);
+
+  border-radius: 15px;
+}
+
+
+/* Form heading */
+
+.profile-form-section h3 {
+  margin: 0 0 15px;
+
+  color: #ffffff;
+
+  font-size: 1rem;
+
+  font-weight: 700;
+}
+
+
+/* =========================================
+   FORM LABEL
+========================================= */
+
+.profile-form-section form label {
+  display: block;
+
+  margin: 12px 0 6px;
+
+  color: #cbd5e1;
+
+  font-size: 0.78rem;
+
+  font-weight: 600;
+}
+
+
+/* =========================================
+   FORM INPUT
+========================================= */
+
+.profile-form-section form input {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 10px 11px;
+
+  border-radius: 9px;
+
+  border: 1px solid rgba(148, 163, 184, 0.2);
+
+  background: #0f172a;
+
+  color: #ffffff;
+
+  outline: none;
+
+  font-size: 0.85rem;
+
+  transition: 0.2s ease;
+}
+
+
+.profile-form-section form input::placeholder {
+  color: #64748b;
+}
+
+
+.profile-form-section form input:focus {
+  border-color: #3b82f6;
+
+  box-shadow:
+    0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+
+/* Disabled email */
+
+.profile-form-section form input:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+
+  background: #0b1220;
+}
+
+
+/* =========================================
+   FORM BUTTONS
+========================================= */
+
+.form-buttons {
+  display: flex;
+
+  gap: 8px;
+
+  margin-top: 17px;
+}
+
+
+.form-buttons button {
+  padding: 9px 14px;
+
+  border-radius: 9px;
+
+  border: none;
+
+  font-size: 0.78rem;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+
+/* First button */
+
+.form-buttons button:first-child {
+  background: #2563eb;
+
+  color: #ffffff;
+}
+
+
+.form-buttons button:first-child:hover {
+  background: #1d4ed8;
+}
+
+
+/* Cancel */
+
+.form-buttons button:last-child {
+  background: rgba(148, 163, 184, 0.1);
+
+  color: #cbd5e1;
+
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+
+.form-buttons button:last-child:hover {
+  background: rgba(148, 163, 184, 0.18);
+}
+
+
+/* Disabled */
+
+.form-buttons button:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   LOADING
+========================================= */
+
+.profile-loading {
+  margin-top: 15px;
+
+  padding: 25px;
+
+  text-align: center;
+
+  color: #94a3b8;
+
+  font-size: 0.85rem;
+}
+
+
+/* =========================================
+   STATS SECTION
+========================================= */
 
 .profile-stats-section {
   display: grid;
+
   grid-template-columns: repeat(3, 1fr);
+
   gap: 10px;
-  margin-bottom: 20px;
+
+  margin-top: 15px;
 }
+
+
+/* =========================================
+   STAT CARD
+========================================= */
 
 .stat-card {
-  background: #1f2937;
-  padding: 12px;
-  border-radius: 10px;
+  padding: 15px 10px;
+
   text-align: center;
+
+  background: #111c33;
+
+  border: 1px solid rgba(148, 163, 184, 0.13);
+
+  border-radius: 13px;
 }
+
 
 .stat-card h3 {
-  font-size: 1.4rem;
-  color: #3b82f6;
-  margin-bottom: 4px;
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 1.35rem;
+
+  font-weight: 700;
 }
+
 
 .stat-card p {
-  font-size: 0.75rem;
-  color: #9ca3af;
+  margin: 5px 0 0;
+
+  color: #94a3b8;
+
+  font-size: 0.7rem;
+
+  line-height: 1.3;
 }
+
+
+/* =========================================
+   USER PINGS
+========================================= */
 
 .profile-pings-list {
-  grid-column: span 3;
-  margin-top: 10px;
-  max-height: 200px;
-  overflow-y: auto;
+  grid-column: 1 / -1;
+
+  margin-top: 5px;
+
+  padding: 16px;
+
+  background: #111c33;
+
+  border: 1px solid rgba(148, 163, 184, 0.13);
+
+  border-radius: 15px;
 }
 
-.profile-pings-list h3 {
+
+.profile-pings-list > h3 {
+  margin: 0 0 12px;
+
+  color: #ffffff;
+
   font-size: 1rem;
-  margin-bottom: 10px;
 }
 
-.profile-ping-item {
-  background: #1f2937;
-  padding: 10px 12px;
-  border-radius: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-}
 
-.profile-ping-item.resolved {
-  opacity: 0.7;
-}
-
-.status-tag {
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: bold;
-}
-
-.status-tag.blue {
-  background: #3b82f6;
-  color: #fff;
-}
-
-.status-tag.green {
-  background: #10b981;
-  color: #fff;
-}
+/* =========================================
+   NO PINGS
+========================================= */
 
 .no-pings-text {
-  color: #9ca3af;
-  font-size: 0.85rem;
+  margin: 0;
+
+  padding: 20px 10px;
+
   text-align: center;
+
+  color: #64748b;
+
+  font-size: 0.8rem;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================
+   PING ITEM
+========================================= */
+
+.profile-ping-item {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  padding: 12px;
+
+  margin-bottom: 8px;
+
+  background: #0f172a;
+
+  border: 1px solid rgba(148, 163, 184, 0.12);
+
+  border-radius: 10px;
+
+  transition: 0.2s ease;
+}
+
+
+.profile-ping-item:last-child {
+  margin-bottom: 0;
+}
+
+
+.profile-ping-item:hover {
+  border-color: rgba(96, 165, 250, 0.25);
+}
+
+
+/* =========================================
+   PING INFO
+========================================= */
+
+.ping-info {
+  min-width: 0;
+
+  flex: 1;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  flex-wrap: wrap;
+}
+
+
+.ping-info strong {
+  color: #e2e8f0;
+
+  font-size: 0.83rem;
+
+  font-weight: 600;
+
+  word-break: break-word;
+}
+
+
+/* =========================================
+   PING TYPE
+========================================= */
+
+.ping-type-badge {
+  padding: 3px 6px;
+
+  border-radius: 5px;
+
+  background: rgba(59, 130, 246, 0.12);
+
+  border: 1px solid rgba(59, 130, 246, 0.2);
+
+  color: #60a5fa;
+
+  font-size: 0.62rem;
+
+  font-weight: 700;
+}
+
+
+/* =========================================
+   STATUS TAG
+========================================= */
+
+.status-tag {
+  flex-shrink: 0;
+
+  padding: 4px 7px;
+
+  border-radius: 6px;
+
+  font-size: 0.6rem;
+
+  font-weight: 700;
+}
+
+
+/* Active */
+
+.status-tag.blue {
+  background: rgba(59, 130, 246, 0.12);
+
+  color: #60a5fa;
+}
+
+
+/* Resolved */
+
+.status-tag.green {
+  background: rgba(34, 197, 94, 0.12);
+
+  color: #86efac;
+}
+
+
+/* Expired */
+
+.status-tag.red {
+  background: rgba(239, 68, 68, 0.12);
+
+  color: #fca5a5;
+}
+
+
+/* =========================================
+   RESOLVED PING
+========================================= */
+
+.profile-ping-item.resolved {
+  opacity: 0.72;
+}
+
+
+/* =========================================
+   EXPIRED PING
+========================================= */
+
+.profile-ping-item.expired {
+  opacity: 0.62;
+}
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+.profile-logout-btn {
+  grid-column: 1 / -1;
+
+  width: 100%;
+
+  margin-top: 2px;
+
+  padding: 11px;
+
+  border-radius: 10px;
+
+  border: 1px solid rgba(239, 68, 68, 0.3);
+
+  background: rgba(239, 68, 68, 0.1);
+
+  color: #f87171;
+
+  font-size: 0.82rem;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+
+.profile-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.18);
+
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+  .profile-modal-overlay {
+    align-items: flex-start;
+
+    padding: 10px;
+  }
+
+  .profile-modal-content {
+    max-height: 94vh;
+
+    padding: 14px;
+
+    border-radius: 16px;
+  }
+
+
+  .profile-close-btn {
+    top: 9px;
+    right: 9px;
+
+    width: 31px;
+    height: 31px;
+
+    font-size: 21px;
+  }
+
+
+  .profile-header {
+    padding: 18px 14px;
+  }
+
+
+  .profile-avatar {
+    width: 65px;
+    height: 65px;
+
+    font-size: 25px;
+  }
+
+
+  .profile-header h2 {
+    font-size: 1.2rem;
+  }
+
+
+  .profile-email {
+    font-size: 0.76rem;
+  }
+
+
+  .profile-phone {
+    font-size: 0.74rem;
+  }
+
+
+  .profile-actions {
+    gap: 6px;
+  }
+
+
+  .profile-edit-btn,
+  .profile-password-btn {
+    padding: 8px 10px;
+
+    font-size: 0.7rem;
+  }
+
+
+  .profile-stats-section {
+    gap: 7px;
+  }
+
+
+  .stat-card {
+    padding: 12px 5px;
+  }
+
+
+  .stat-card h3 {
+    font-size: 1.1rem;
+  }
+
+
+  .stat-card p {
+    font-size: 0.62rem;
+  }
+
+
+  .profile-pings-list {
+    padding: 12px;
+  }
+
+
+  .profile-ping-item {
+    padding: 10px;
+
+    align-items: flex-start;
+  }
+
+
+  .ping-info {
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 5px;
+  }
+
+
+  .ping-info strong {
+    font-size: 0.78rem;
+  }
+
+
+  .status-tag {
+    font-size: 0.56rem;
+
+    padding: 4px 6px;
+  }
+
+
+  .profile-form-section {
+    padding: 14px;
+  }
+}
+
+
+/* =========================================
+   VERY SMALL MOBILE
+========================================= */
+
+@media (max-width: 380px) {
+
+  .profile-modal-content {
+    padding: 10px;
+  }
+
+
+  .profile-header {
+    padding: 15px 10px;
+  }
+
+
+  .profile-avatar {
+    width: 58px;
+    height: 58px;
+
+    font-size: 22px;
+  }
+
+
+  .profile-header h2 {
+    font-size: 1.05rem;
+  }
+
+
+  .profile-actions {
+    flex-direction: column;
+  }
+
+
+  .profile-edit-btn,
+  .profile-password-btn {
+    width: 100%;
+  }
+
+
+  .profile-stats-section {
+    grid-template-columns: 1fr;
+  }
+
+
+  .profile-pings-list,
+  .profile-logout-btn {
+    grid-column: 1;
+  }
+
+
+  .profile-ping-item {
+    flex-direction: column;
+
+    align-items: flex-start;
+  }
+
+
+  .status-tag {
+    align-self: flex-start;
+  }
 }
