@@ -1,6 +1,10 @@
-/* =========================================
-   PROFILE MODAL OVERLAY
-========================================= */
+/* =========================================================
+   NEARPING — PROFESSIONAL PROFILE
+   ========================================================= */
+
+/* =========================
+   MODAL OVERLAY
+========================= */
 
 .profile-modal-overlay {
   position: fixed;
@@ -11,56 +15,54 @@
   align-items: center;
   justify-content: center;
 
-  padding: 15px;
+  padding: 20px;
+  box-sizing: border-box;
 
-  background: rgba(2, 6, 23, 0.78);
+  background: rgba(2, 6, 23, 0.72);
 
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 
   overflow-y: auto;
-
-  box-sizing: border-box;
 }
 
 
-/* =========================================
-   PROFILE MODAL
-========================================= */
+/* =========================
+   MODAL
+========================= */
 
 .profile-modal-content {
   position: relative;
 
   width: 100%;
-  max-width: 620px;
-
+  max-width: 680px;
   max-height: 92vh;
 
   overflow-y: auto;
 
-  padding: 22px;
-
+  padding: 24px;
   box-sizing: border-box;
 
-  background: #0f172a;
-
+  background: #0b1220;
   color: #e5e7eb;
 
-  border: 1px solid rgba(148, 163, 184, 0.18);
-
-  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 22px;
 
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.45);
+    0 25px 70px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
 
-  animation: profileModalOpen 0.2s ease-out;
+  animation: profileModalOpen 0.22s ease-out;
 }
 
 
-/* Scrollbar */
+/* =========================
+   SCROLLBAR
+========================= */
 
 .profile-modal-content::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .profile-modal-content::-webkit-scrollbar-track {
@@ -69,18 +71,18 @@
 
 .profile-modal-content::-webkit-scrollbar-thumb {
   background: #334155;
-  border-radius: 10px;
+  border-radius: 20px;
 }
 
 
-/* =========================================
+/* =========================
    MODAL ANIMATION
-========================================= */
+========================= */
 
 @keyframes profileModalOpen {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.98);
+    transform: translateY(12px) scale(0.98);
   }
 
   to {
@@ -90,72 +92,106 @@
 }
 
 
-/* =========================================
+/* =========================
    CLOSE BUTTON
-========================================= */
+========================= */
 
 .profile-close-btn {
   position: absolute;
+  top: 15px;
+  right: 15px;
 
-  top: 12px;
-  right: 12px;
-
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border: 1px solid rgba(148, 163, 184, 0.18);
-
+  border: 1px solid rgba(148, 163, 184, 0.15);
   border-radius: 50%;
 
-  background: rgba(148, 163, 184, 0.08);
+  background: rgba(15, 23, 42, 0.8);
+  color: #94a3b8;
 
-  color: #cbd5e1;
-
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
 
   cursor: pointer;
 
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .profile-close-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.12);
   color: #f87171;
-  border-color: rgba(239, 68, 68, 0.35);
+  border-color: rgba(239, 68, 68, 0.3);
+
+  transform: rotate(4deg);
 }
 
 
-/* =========================================
+/* =========================
    PROFILE HEADER
-========================================= */
+========================= */
 
 .profile-header {
-  padding: 20px;
+  position: relative;
 
-  background: #111c33;
-
-  border: 1px solid rgba(148, 163, 184, 0.13);
-
-  border-radius: 16px;
+  padding: 28px 22px 24px;
 
   text-align: center;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(30, 41, 59, 0.9),
+      rgba(15, 23, 42, 0.95)
+    );
+
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  border-radius: 18px;
+
+  overflow: hidden;
+}
+
+.profile-header::before {
+  content: "";
+
+  position: absolute;
+  top: -70px;
+  left: 50%;
+
+  width: 180px;
+  height: 180px;
+
+  transform: translateX(-50%);
+
+  background: rgba(59, 130, 246, 0.08);
+
+  border-radius: 50%;
+
+  filter: blur(30px);
+
+  pointer-events: none;
 }
 
 
-/* =========================================
+/* =========================
    AVATAR
-========================================= */
+========================= */
 
 .profile-avatar {
-  width: 76px;
-  height: 76px;
+  position: relative;
 
-  margin: 0 auto 12px;
+  width: 82px;
+  height: 82px;
+
+  margin: 0 auto 15px;
 
   display: flex;
   align-items: center;
@@ -163,41 +199,53 @@
 
   border-radius: 50%;
 
-  background: #1d4ed8;
+  background: linear-gradient(
+    145deg,
+    #2563eb,
+    #1d4ed8
+  );
 
   color: #ffffff;
 
   font-size: 30px;
   font-weight: 700;
 
-  border: 3px solid rgba(96, 165, 250, 0.3);
+  border: 4px solid rgba(96, 165, 250, 0.16);
 
-  box-shadow: 0 5px 20px rgba(37, 99, 235, 0.18);
+  box-shadow:
+    0 8px 30px rgba(37, 99, 235, 0.25);
+
+  z-index: 1;
 }
 
 
-/* =========================================
+/* =========================
    NAME
-========================================= */
+========================= */
 
 .profile-header h2 {
+  position: relative;
+
   margin: 0;
 
-  color: #ffffff;
+  color: #f8fafc;
 
-  font-size: 1.45rem;
+  font-size: 1.5rem;
   font-weight: 700;
+  letter-spacing: -0.3px;
 
   word-break: break-word;
 }
 
 
-/* =========================================
+/* =========================
    EMAIL
-========================================= */
+========================= */
 
 .profile-email {
-  margin: 6px 0 0;
+  position: relative;
+
+  margin: 7px 0 0;
 
   color: #94a3b8;
 
@@ -207,264 +255,299 @@
 }
 
 
-/* =========================================
+/* =========================
    PHONE
-========================================= */
+========================= */
 
 .profile-phone {
+  position: relative;
+
   margin: 5px 0 0;
 
   color: #64748b;
 
-  font-size: 0.82rem;
+  font-size: 0.8rem;
 }
 
 
-/* =========================================
+/* =========================
    PROFILE ACTIONS
-========================================= */
+========================= */
 
 .profile-actions {
-  display: flex;
+  position: relative;
 
+  display: flex;
+  align-items: center;
   justify-content: center;
 
-  gap: 8px;
+  gap: 9px;
 
-  margin-top: 16px;
+  margin-top: 19px;
 
   flex-wrap: wrap;
 }
 
 
-/* =========================================
-   EDIT BUTTON
-========================================= */
+/* =========================
+   ACTION BUTTONS
+========================= */
 
 .profile-edit-btn,
 .profile-password-btn {
-  padding: 9px 13px;
+  min-height: 38px;
 
-  border-radius: 9px;
+  padding: 9px 15px;
+
+  border-radius: 10px;
 
   font-size: 0.78rem;
-
   font-weight: 600;
 
   cursor: pointer;
 
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.profile-edit-btn:active,
+.profile-password-btn:active {
+  transform: scale(0.97);
 }
 
 
+/* Edit */
+
 .profile-edit-btn {
-  background: rgba(59, 130, 246, 0.14);
+  background: rgba(59, 130, 246, 0.1);
 
   color: #60a5fa;
 
-  border: 1px solid rgba(59, 130, 246, 0.35);
+  border: 1px solid rgba(59, 130, 246, 0.28);
 }
 
 .profile-edit-btn:hover {
-  background: rgba(59, 130, 246, 0.23);
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.42);
 }
 
 
+/* Password */
+
 .profile-password-btn {
-  background: rgba(168, 85, 247, 0.12);
+  background: rgba(168, 85, 247, 0.09);
 
   color: #c084fc;
 
-  border: 1px solid rgba(168, 85, 247, 0.3);
+  border: 1px solid rgba(168, 85, 247, 0.25);
 }
 
 .profile-password-btn:hover {
-  background: rgba(168, 85, 247, 0.2);
+  background: rgba(168, 85, 247, 0.17);
+  border-color: rgba(168, 85, 247, 0.38);
 }
 
 
-/* =========================================
-   SUCCESS MESSAGE
-========================================= */
+/* =========================
+   SUCCESS
+========================= */
 
 .profile-success-message {
-  margin-top: 12px;
+  margin-top: 14px;
 
-  padding: 10px 12px;
+  padding: 11px 13px;
 
-  border-radius: 9px;
+  border-radius: 10px;
 
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(34, 197, 94, 0.07);
 
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  border: 1px solid rgba(34, 197, 94, 0.2);
 
   color: #86efac;
 
-  font-size: 0.8rem;
-
-  line-height: 1.4;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 
-/* =========================================
-   ERROR MESSAGE
-========================================= */
+/* =========================
+   ERROR
+========================= */
 
 .profile-error-message {
-  margin-top: 12px;
+  margin-top: 14px;
 
-  padding: 10px 12px;
+  padding: 11px 13px;
 
-  border-radius: 9px;
+  border-radius: 10px;
 
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.07);
 
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 
   color: #fca5a5;
 
-  font-size: 0.8rem;
-
-  line-height: 1.4;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 
-/* =========================================
+/* =========================
    FORM SECTION
-========================================= */
+========================= */
 
 .profile-form-section {
-  margin-top: 14px;
+  margin-top: 16px;
 
-  padding: 18px;
+  padding: 20px;
 
-  background: #111c33;
+  background: #0f172a;
 
-  border: 1px solid rgba(148, 163, 184, 0.13);
+  border: 1px solid rgba(148, 163, 184, 0.12);
 
-  border-radius: 15px;
+  border-radius: 16px;
 }
 
 
-/* Form heading */
+/* =========================
+   FORM HEADING
+========================= */
 
 .profile-form-section h3 {
-  margin: 0 0 15px;
+  margin: 0 0 17px;
 
-  color: #ffffff;
+  color: #f8fafc;
 
-  font-size: 1rem;
-
+  font-size: 0.98rem;
   font-weight: 700;
 }
 
 
-/* =========================================
-   FORM LABEL
-========================================= */
+/* =========================
+   LABEL
+========================= */
 
 .profile-form-section form label {
   display: block;
 
-  margin: 12px 0 6px;
+  margin: 13px 0 7px;
 
   color: #cbd5e1;
 
-  font-size: 0.78rem;
-
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
 
-/* =========================================
-   FORM INPUT
-========================================= */
+/* =========================
+   INPUT
+========================= */
 
 .profile-form-section form input {
   width: 100%;
 
   box-sizing: border-box;
 
-  padding: 10px 11px;
+  padding: 11px 12px;
 
-  border-radius: 9px;
+  border-radius: 10px;
 
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.16);
 
-  background: #0f172a;
+  background: #080f1c;
 
-  color: #ffffff;
+  color: #f8fafc;
 
   outline: none;
 
-  font-size: 0.85rem;
+  font-family: inherit;
+  font-size: 0.84rem;
 
-  transition: 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
-
-.profile-form-section form input::placeholder {
-  color: #64748b;
+.profile-form-section form input:hover {
+  border-color: rgba(148, 163, 184, 0.25);
 }
-
 
 .profile-form-section form input:focus {
-  border-color: #3b82f6;
+  background: #0a1323;
+
+  border-color: rgba(59, 130, 246, 0.65);
 
   box-shadow:
-    0 0 0 2px rgba(59, 130, 246, 0.1);
+    0 0 0 3px rgba(59, 130, 246, 0.09);
+}
+
+.profile-form-section form input::placeholder {
+  color: #475569;
 }
 
 
-/* Disabled email */
+/* Disabled */
 
 .profile-form-section form input:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
 
   cursor: not-allowed;
 
-  background: #0b1220;
+  background: #070d18;
 }
 
 
-/* =========================================
+/* =========================
    FORM BUTTONS
-========================================= */
+========================= */
 
 .form-buttons {
   display: flex;
 
-  gap: 8px;
+  gap: 9px;
 
-  margin-top: 17px;
+  margin-top: 19px;
 }
 
-
 .form-buttons button {
-  padding: 9px 14px;
+  min-height: 38px;
+
+  padding: 9px 16px;
 
   border-radius: 9px;
 
-  border: none;
-
-  font-size: 0.78rem;
-
+  font-family: inherit;
+  font-size: 0.77rem;
   font-weight: 600;
 
   cursor: pointer;
 
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.form-buttons button:active {
+  transform: scale(0.97);
 }
 
 
-/* First button */
+/* Save */
 
 .form-buttons button:first-child {
   background: #2563eb;
 
   color: #ffffff;
-}
 
+  border: 1px solid #2563eb;
+
+  box-shadow:
+    0 4px 12px rgba(37, 99, 235, 0.15);
+}
 
 .form-buttons button:first-child:hover {
   background: #1d4ed8;
@@ -474,48 +557,49 @@
 /* Cancel */
 
 .form-buttons button:last-child {
-  background: rgba(148, 163, 184, 0.1);
+  background: rgba(148, 163, 184, 0.06);
 
   color: #cbd5e1;
 
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.16);
 }
 
-
 .form-buttons button:last-child:hover {
-  background: rgba(148, 163, 184, 0.18);
+  background: rgba(148, 163, 184, 0.12);
 }
 
 
 /* Disabled */
 
 .form-buttons button:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
 
   cursor: not-allowed;
+
+  transform: none;
 }
 
 
-/* =========================================
+/* =========================
    LOADING
-========================================= */
+========================= */
 
 .profile-loading {
-  margin-top: 15px;
+  margin-top: 16px;
 
-  padding: 25px;
+  padding: 30px 20px;
 
   text-align: center;
 
-  color: #94a3b8;
+  color: #64748b;
 
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 
-/* =========================================
-   STATS SECTION
-========================================= */
+/* =========================
+   STATS
+========================= */
 
 .profile-stats-section {
   display: grid;
@@ -524,34 +608,43 @@
 
   gap: 10px;
 
-  margin-top: 15px;
+  margin-top: 16px;
 }
 
 
-/* =========================================
+/* =========================
    STAT CARD
-========================================= */
+========================= */
 
 .stat-card {
-  padding: 15px 10px;
+  padding: 17px 10px;
 
   text-align: center;
 
-  background: #111c33;
+  background: #0f172a;
 
-  border: 1px solid rgba(148, 163, 184, 0.13);
+  border: 1px solid rgba(148, 163, 184, 0.12);
 
-  border-radius: 13px;
+  border-radius: 14px;
+
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.stat-card:hover {
+  border-color: rgba(96, 165, 250, 0.25);
+
+  transform: translateY(-1px);
 }
 
 
 .stat-card h3 {
   margin: 0;
 
-  color: #ffffff;
+  color: #f8fafc;
 
-  font-size: 1.35rem;
-
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
@@ -559,101 +652,107 @@
 .stat-card p {
   margin: 5px 0 0;
 
-  color: #94a3b8;
+  color: #64748b;
 
-  font-size: 0.7rem;
+  font-size: 0.68rem;
+  font-weight: 500;
 
   line-height: 1.3;
 }
 
 
-/* =========================================
+/* =========================
    USER PINGS
-========================================= */
+========================= */
 
 .profile-pings-list {
   grid-column: 1 / -1;
 
-  margin-top: 5px;
+  margin-top: 1px;
 
-  padding: 16px;
-
-  background: #111c33;
-
-  border: 1px solid rgba(148, 163, 184, 0.13);
-
-  border-radius: 15px;
-}
-
-
-.profile-pings-list > h3 {
-  margin: 0 0 12px;
-
-  color: #ffffff;
-
-  font-size: 1rem;
-}
-
-
-/* =========================================
-   NO PINGS
-========================================= */
-
-.no-pings-text {
-  margin: 0;
-
-  padding: 20px 10px;
-
-  text-align: center;
-
-  color: #64748b;
-
-  font-size: 0.8rem;
-
-  line-height: 1.5;
-}
-
-
-/* =========================================
-   PING ITEM
-========================================= */
-
-.profile-ping-item {
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 10px;
-
-  padding: 12px;
-
-  margin-bottom: 8px;
+  padding: 18px;
 
   background: #0f172a;
 
   border: 1px solid rgba(148, 163, 184, 0.12);
 
-  border-radius: 10px;
-
-  transition: 0.2s ease;
+  border-radius: 16px;
 }
 
+
+.profile-pings-list > h3 {
+  margin: 0 0 14px;
+
+  color: #f8fafc;
+
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+
+/* =========================
+   NO PINGS
+========================= */
+
+.no-pings-text {
+  margin: 0;
+
+  padding: 24px 10px;
+
+  text-align: center;
+
+  color: #64748b;
+
+  font-size: 0.78rem;
+
+  line-height: 1.5;
+}
+
+
+/* =========================
+   PING ITEM
+========================= */
+
+.profile-ping-item {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 13px 14px;
+
+  margin-bottom: 8px;
+
+  background: #0a1220;
+
+  border: 1px solid rgba(148, 163, 184, 0.1);
+
+  border-radius: 11px;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
 
 .profile-ping-item:last-child {
   margin-bottom: 0;
 }
 
-
 .profile-ping-item:hover {
-  border-color: rgba(96, 165, 250, 0.25);
+  background: #0d1728;
+
+  border-color: rgba(96, 165, 250, 0.2);
+
+  transform: translateX(2px);
 }
 
 
-/* =========================================
+/* =========================
    PING INFO
-========================================= */
+========================= */
 
 .ping-info {
   min-width: 0;
@@ -664,147 +763,154 @@
 
   align-items: center;
 
-  gap: 7px;
+  gap: 8px;
 
   flex-wrap: wrap;
 }
 
-
 .ping-info strong {
   color: #e2e8f0;
 
-  font-size: 0.83rem;
-
+  font-size: 0.82rem;
   font-weight: 600;
 
   word-break: break-word;
 }
 
 
-/* =========================================
+/* =========================
    PING TYPE
-========================================= */
+========================= */
 
 .ping-type-badge {
-  padding: 3px 6px;
-
-  border-radius: 5px;
-
-  background: rgba(59, 130, 246, 0.12);
-
-  border: 1px solid rgba(59, 130, 246, 0.2);
-
-  color: #60a5fa;
-
-  font-size: 0.62rem;
-
-  font-weight: 700;
-}
-
-
-/* =========================================
-   STATUS TAG
-========================================= */
-
-.status-tag {
-  flex-shrink: 0;
-
   padding: 4px 7px;
 
   border-radius: 6px;
 
-  font-size: 0.6rem;
+  background: rgba(59, 130, 246, 0.08);
 
+  border: 1px solid rgba(59, 130, 246, 0.16);
+
+  color: #60a5fa;
+
+  font-size: 0.59rem;
   font-weight: 700;
+
+  letter-spacing: 0.2px;
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+.status-tag {
+  flex-shrink: 0;
+
+  padding: 5px 8px;
+
+  border-radius: 7px;
+
+  font-size: 0.59rem;
+  font-weight: 700;
+
+  letter-spacing: 0.2px;
 }
 
 
 /* Active */
 
 .status-tag.blue {
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(59, 130, 246, 0.1);
 
   color: #60a5fa;
+
+  border: 1px solid rgba(59, 130, 246, 0.12);
 }
 
 
 /* Resolved */
 
 .status-tag.green {
-  background: rgba(34, 197, 94, 0.12);
+  background: rgba(34, 197, 94, 0.09);
 
   color: #86efac;
+
+  border: 1px solid rgba(34, 197, 94, 0.12);
 }
 
 
 /* Expired */
 
 .status-tag.red {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(239, 68, 68, 0.09);
 
   color: #fca5a5;
+
+  border: 1px solid rgba(239, 68, 68, 0.12);
 }
 
 
-/* =========================================
-   RESOLVED PING
-========================================= */
+/* =========================
+   RESOLVED
+========================= */
 
 .profile-ping-item.resolved {
-  opacity: 0.72;
+  opacity: 0.68;
 }
 
 
-/* =========================================
-   EXPIRED PING
-========================================= */
+/* =========================
+   EXPIRED
+========================= */
 
 .profile-ping-item.expired {
-  opacity: 0.62;
+  opacity: 0.58;
 }
 
 
-/* =========================================
+/* =========================
    LOGOUT
-========================================= */
+========================= */
 
 .profile-logout-btn {
   grid-column: 1 / -1;
 
   width: 100%;
 
-  margin-top: 2px;
+  margin-top: 1px;
 
-  padding: 11px;
+  padding: 11px 14px;
 
   border-radius: 10px;
 
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.06);
 
   color: #f87171;
 
-  font-size: 0.82rem;
-
+  font-family: inherit;
+  font-size: 0.78rem;
   font-weight: 600;
 
   cursor: pointer;
 
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
-
 
 .profile-logout-btn:hover {
-  background: rgba(239, 68, 68, 0.18);
+  background: rgba(239, 68, 68, 0.12);
 
-  border-color: rgba(239, 68, 68, 0.45);
+  border-color: rgba(239, 68, 68, 0.32);
 }
 
 
-/* =========================================
+/* =========================================================
    MOBILE
-========================================= */
+========================================================= */
 
 @media (max-width: 600px) {
 
@@ -817,31 +923,35 @@
   .profile-modal-content {
     max-height: 94vh;
 
-    padding: 14px;
+    padding: 13px;
 
-    border-radius: 16px;
+    border-radius: 17px;
   }
 
 
   .profile-close-btn {
-    top: 9px;
-    right: 9px;
+    top: 10px;
+    right: 10px;
 
-    width: 31px;
-    height: 31px;
+    width: 32px;
+    height: 32px;
 
-    font-size: 21px;
+    font-size: 20px;
   }
 
 
   .profile-header {
-    padding: 18px 14px;
+    padding: 24px 15px 20px;
+
+    border-radius: 15px;
   }
 
 
   .profile-avatar {
-    width: 65px;
-    height: 65px;
+    width: 68px;
+    height: 68px;
+
+    margin-bottom: 12px;
 
     font-size: 25px;
   }
@@ -853,23 +963,55 @@
 
 
   .profile-email {
-    font-size: 0.76rem;
+    font-size: 0.75rem;
   }
 
 
   .profile-phone {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
   }
 
 
   .profile-actions {
-    gap: 6px;
+    gap: 7px;
+
+    margin-top: 16px;
   }
 
 
   .profile-edit-btn,
   .profile-password-btn {
-    padding: 8px 10px;
+    min-height: 36px;
+
+    padding: 8px 11px;
+
+    font-size: 0.69rem;
+  }
+
+
+  .profile-form-section {
+    padding: 15px;
+
+    border-radius: 14px;
+  }
+
+
+  .profile-form-section h3 {
+    font-size: 0.9rem;
+  }
+
+
+  .profile-form-section form input {
+    padding: 10px;
+
+    font-size: 0.8rem;
+  }
+
+
+  .form-buttons button {
+    min-height: 36px;
+
+    padding: 8px 13px;
 
     font-size: 0.7rem;
   }
@@ -881,27 +1023,31 @@
 
 
   .stat-card {
-    padding: 12px 5px;
+    padding: 13px 5px;
+
+    border-radius: 11px;
   }
 
 
   .stat-card h3 {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
   }
 
 
   .stat-card p {
-    font-size: 0.62rem;
+    font-size: 0.6rem;
   }
 
 
   .profile-pings-list {
-    padding: 12px;
+    padding: 13px;
+
+    border-radius: 14px;
   }
 
 
   .profile-ping-item {
-    padding: 10px;
+    padding: 11px;
 
     align-items: flex-start;
   }
@@ -917,82 +1063,552 @@
 
 
   .ping-info strong {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
+  }
+
+
+  .ping-type-badge {
+    font-size: 0.55rem;
   }
 
 
   .status-tag {
-    font-size: 0.56rem;
-
     padding: 4px 6px;
+
+    font-size: 0.54rem;
   }
 
 
-  .profile-form-section {
-    padding: 14px;
+  .profile-logout-btn {
+    padding: 10px;
+
+    font-size: 0.72rem;
   }
 }
 
 
-/* =========================================
+/* =========================================================
    VERY SMALL MOBILE
-========================================= */
+========================================================= */
 
-@media (max-width: 380px) {
+/* =========================================================
+   PROFESSIONAL MOBILE LAYOUT
+========================================================= */
+
+@media (max-width: 600px) {
+
+  /* ---------- Overlay ---------- */
+
+  .profile-modal-overlay {
+    align-items: flex-start;
+    justify-content: center;
+
+    padding: 0;
+
+    background: rgba(2, 6, 23, 0.78);
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+
+  /* ---------- Main Modal ---------- */
 
   .profile-modal-content {
-    padding: 10px;
+    width: 100%;
+    max-width: none;
+
+    height: 100dvh;
+    max-height: 100dvh;
+
+    padding: 0;
+
+    overflow-y: auto;
+
+    background: #080f1c;
+
+    border: none;
+    border-radius: 0;
+
+    box-shadow: none;
+
+    animation: mobileProfileOpen 0.22s ease-out;
   }
 
+
+  @keyframes mobileProfileOpen {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+
+  /* ---------- Close Button ---------- */
+
+  .profile-close-btn {
+    position: fixed;
+
+    top: 14px;
+    right: 14px;
+
+    z-index: 20;
+
+    width: 38px;
+    height: 38px;
+
+    background: rgba(15, 23, 42, 0.92);
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    color: #cbd5e1;
+
+    font-size: 21px;
+
+    box-shadow:
+      0 5px 18px rgba(0, 0, 0, 0.3);
+  }
+
+
+  /* ---------- Profile Header ---------- */
 
   .profile-header {
-    padding: 15px 10px;
+    position: relative;
+
+    margin: 0;
+
+    padding: 42px 20px 25px;
+
+    border-radius: 0 0 24px 24px;
+
+    background:
+      linear-gradient(
+        180deg,
+        #111c31 0%,
+        #0d1728 100%
+      );
+
+    border: none;
+
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   }
 
+
+  /* ---------- Avatar ---------- */
 
   .profile-avatar {
-    width: 58px;
-    height: 58px;
+    width: 76px;
+    height: 76px;
 
-    font-size: 22px;
+    margin-bottom: 13px;
+
+    font-size: 27px;
+
+    border-width: 3px;
+
+    box-shadow:
+      0 8px 28px rgba(37, 99, 235, 0.25);
   }
 
+
+  /* ---------- Name ---------- */
 
   .profile-header h2 {
-    font-size: 1.05rem;
+    font-size: 1.25rem;
+
+    line-height: 1.3;
+
+    padding-right: 30px;
   }
 
 
+  /* ---------- Email ---------- */
+
+  .profile-email {
+    margin-top: 6px;
+
+    font-size: 0.76rem;
+
+    line-height: 1.4;
+
+    color: #94a3b8;
+  }
+
+
+  /* ---------- Phone ---------- */
+
+  .profile-phone {
+    margin-top: 4px;
+
+    font-size: 0.73rem;
+  }
+
+
+  /* ---------- Action Buttons ---------- */
+
   .profile-actions {
-    flex-direction: column;
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 9px;
+
+    margin-top: 18px;
+
+    padding: 0 5px;
   }
 
 
   .profile-edit-btn,
   .profile-password-btn {
     width: 100%;
+
+    min-height: 42px;
+
+    padding: 10px 8px;
+
+    border-radius: 10px;
+
+    font-size: 0.72rem;
+  }
+
+
+  /* ---------- Messages ---------- */
+
+  .profile-success-message,
+  .profile-error-message {
+    margin: 12px 15px 0;
+
+    padding: 11px 12px;
+
+    border-radius: 10px;
+
+    font-size: 0.75rem;
+  }
+
+
+  /* ---------- Form ---------- */
+
+  .profile-form-section {
+    margin: 14px 12px 0;
+
+    padding: 17px;
+
+    background: #0d1727;
+
+    border-radius: 15px;
+
+    border: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+
+  .profile-form-section h3 {
+    margin-bottom: 15px;
+
+    font-size: 0.92rem;
+  }
+
+
+  .profile-form-section form label {
+    margin: 13px 0 6px;
+
+    font-size: 0.72rem;
+  }
+
+
+  .profile-form-section form input {
+    min-height: 44px;
+
+    padding: 11px 12px;
+
+    border-radius: 10px;
+
+    font-size: 0.82rem;
+  }
+
+
+  .form-buttons {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 9px;
+
+    margin-top: 18px;
+  }
+
+
+  .form-buttons button {
+    width: 100%;
+
+    min-height: 42px;
+
+    border-radius: 10px;
+
+    font-size: 0.72rem;
+  }
+
+
+  /* ---------- Loading ---------- */
+
+  .profile-loading {
+    padding: 40px 20px;
+
+    font-size: 0.8rem;
+  }
+
+
+  /* ---------- Stats ---------- */
+
+  .profile-stats-section {
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 8px;
+
+    margin: 14px 12px 0;
+  }
+
+
+  .stat-card {
+    min-width: 0;
+
+    padding: 15px 5px;
+
+    background: #0d1727;
+
+    border-radius: 13px;
+
+    border: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+
+  .stat-card h3 {
+    font-size: 1.15rem;
+
+    line-height: 1.2;
+  }
+
+
+  .stat-card p {
+    margin-top: 5px;
+
+    font-size: 0.59rem;
+
+    white-space: nowrap;
+  }
+
+
+  /* ---------- Pings ---------- */
+
+  .profile-pings-list {
+    grid-column: 1 / -1;
+
+    margin: 14px 0 0;
+
+    padding: 16px 13px;
+
+    background: #0d1727;
+
+    border-radius: 15px;
+
+    border: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+
+  .profile-pings-list > h3 {
+    margin-bottom: 13px;
+
+    font-size: 0.92rem;
+  }
+
+
+  .no-pings-text {
+    padding: 25px 8px;
+
+    font-size: 0.74rem;
+  }
+
+
+  /* ---------- Ping Card ---------- */
+
+  .profile-ping-item {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 12px;
+
+    margin-bottom: 8px;
+
+    background: #091321;
+
+    border-radius: 11px;
+
+    border: 1px solid rgba(148, 163, 184, 0.08);
+  }
+
+
+  .profile-ping-item:hover {
+    transform: none;
+
+    background: #0b1727;
+  }
+
+
+  /* ---------- Ping Information ---------- */
+
+  .ping-info {
+    flex: 1;
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 5px;
+  }
+
+
+  .ping-info strong {
+    max-width: 100%;
+
+    font-size: 0.76rem;
+
+    line-height: 1.35;
+  }
+
+
+  /* ---------- Type Badge ---------- */
+
+  .ping-type-badge {
+    padding: 4px 7px;
+
+    border-radius: 6px;
+
+    font-size: 0.54rem;
+
+    white-space: nowrap;
+  }
+
+
+  /* ---------- Status ---------- */
+
+  .status-tag {
+    align-self: center;
+
+    padding: 5px 7px;
+
+    border-radius: 6px;
+
+    font-size: 0.52rem;
+
+    white-space: nowrap;
+  }
+
+
+  /* ---------- Logout ---------- */
+
+  .profile-logout-btn {
+    grid-column: 1 / -1;
+
+    width: calc(100% - 24px);
+
+    margin: 14px 12px 25px;
+
+    min-height: 43px;
+
+    padding: 10px;
+
+    border-radius: 10px;
+
+    font-size: 0.73rem;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+  .profile-header {
+    padding: 38px 15px 22px;
+  }
+
+
+  .profile-avatar {
+    width: 68px;
+    height: 68px;
+
+    font-size: 24px;
+  }
+
+
+  .profile-header h2 {
+    font-size: 1.12rem;
+  }
+
+
+  .profile-email {
+    font-size: 0.7rem;
+  }
+
+
+  .profile-actions {
+    gap: 7px;
+  }
+
+
+  .profile-edit-btn,
+  .profile-password-btn {
+    min-height: 40px;
+
+    font-size: 0.66rem;
   }
 
 
   .profile-stats-section {
-    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
 
-  .profile-pings-list,
-  .profile-logout-btn {
-    grid-column: 1;
+  .stat-card {
+    padding: 13px 3px;
+  }
+
+
+  .stat-card h3 {
+    font-size: 1.05rem;
+  }
+
+
+  .stat-card p {
+    font-size: 0.55rem;
+  }
+
+
+  .profile-pings-list {
+    padding: 14px 10px;
   }
 
 
   .profile-ping-item {
-    flex-direction: column;
-
-    align-items: flex-start;
+    padding: 10px;
   }
 
 
-  .status-tag {
-    align-self: flex-start;
+  .ping-info strong {
+    font-size: 0.72rem;
   }
 }
