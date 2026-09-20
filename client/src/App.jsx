@@ -803,32 +803,27 @@ function App() {
         />
       )}
 
-      {/* =================================================
-          CLAIMS LIST
-      ================================================= */}
+      
+ {/* =================================================
+    CLAIMS LIST
+================================================= */}
 
-      {selectedPingForViewClaims && (
-        <ClaimsListModal
-          ping={
-            selectedPingForViewClaims
-          }
+{selectedPingForViewClaims && (
+  <ClaimsListModal
+    ping={selectedPingForViewClaims}
 
-          onClose={() =>
-            setSelectedPingForViewClaims(
-              null
-            )
-          }
+    onClose={() =>
+      setSelectedPingForViewClaims(null)
+    }
 
-          onClaimAccepted={() =>
-            setSelectedPingForViewClaims(
-              null
-            )
-          }
-        />
-      )}
-
-    </div>
-  );
-}
+    onClaimAccepted={() => {
+      // Claim accept hone ke baad modal open rahega
+      // Chat button dikhne ke liye
+    }}
+  />
+)}
+           </div>
+         );
+       }
 
 export default App;
