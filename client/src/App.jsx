@@ -105,6 +105,16 @@ function App() {
         return localStorage.getItem("userId");
       }
 
+      // Agar direct ID saved hai
+      if (
+        typeof savedUserData === "string" &&
+        /^[a-f\d]{24}$/i.test(
+          savedUserData
+        )
+      ) {
+        return savedUserData;
+      }
+
       const parsed =
         JSON.parse(savedUserData);
 
@@ -113,7 +123,8 @@ function App() {
         parsed?.id ||
         parsed?.user?._id ||
         parsed?.user?.id ||
-        parsed?.data?._id
+        parsed?.data?._id ||
+        null
       );
     } catch (err) {
       console.error(
@@ -121,9 +132,53 @@ function App() {
         err
       );
 
-      return null;
+      return (
+        localStorage.getItem("userId") ||
+        null
+      );
     }
   };
+
+  // ===================================================
+  // 👤 GLOBAL SOCKET USER ROOM
+  // ===================================================
+
+  useEffect(() => {
+    const joinUserRoom = () => {
+      const userId =
+        getLoggedInUserId();
+
+      if (!userId) {
+        return;
+      }
+
+      console.log(
+        "👤 Joining NearPing user room:",
+        userId
+      );
+
+      socket.emit(
+        "join-user",
+        String(userId)
+      );
+    };
+
+    // Immediately try
+    joinUserRoom();
+
+    /*
+      Login ke baad localStorage update hone par
+      user room join karne ke liye har second check.
+    */
+    const interval = setInterval(
+      joinUserRoom,
+      1000
+    );
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
 
   // ===================================================
   // 🗑️ DELETE PING
@@ -245,9 +300,6 @@ function App() {
         setPings((prevPings) =>
           prevPings.filter(
             (ping) => {
-              // Agar expiry time nahi hai
-              // to ping ko rakho
-
               if (!ping.expiresAt) {
                 return true;
               }
@@ -562,6 +614,53 @@ function App() {
       };
 
     // =================================================
+    // 💬 CLAIM CHAT MESSAGE
+    // =================================================
+
+    const handleClaimChatMessage =
+      (newMessage) => {
+        console.log(
+          "💬 Incoming Claim Chat Message:",
+          newMessage
+        );
+
+        if (!newMessage) {
+          return;
+        }
+
+        const senderName =
+          newMessage.sender?.name ||
+          "Someone";
+
+        const messageText =
+          newMessage.message ||
+          "New message received";
+
+        // 🔊 Sound
+        playAlertSound(false);
+
+        // 🔔 Browser notification
+        if (
+          "Notification" in window &&
+          Notification.permission ===
+            "granted"
+        ) {
+          new Notification(
+            `💬 Message from ${senderName}`,
+            {
+              body: messageText,
+              icon: "/favicon.ico",
+            }
+          );
+        }
+
+        // Screen alert
+        alert(
+          `💬 ${senderName}\n\n${messageText}`
+        );
+      };
+
+    // =================================================
     // SOCKET LISTENERS
     // =================================================
 
@@ -583,6 +682,12 @@ function App() {
     socket.on(
       "new-claim",
       handleNewClaim
+    );
+
+    // 💬 Chat message
+    socket.on(
+      "claim-chat-message",
+      handleClaimChatMessage
     );
 
     // Owner-specific listener
@@ -619,6 +724,11 @@ function App() {
         handleNewClaim
       );
 
+      socket.off(
+        "claim-chat-message",
+        handleClaimChatMessage
+      );
+
       if (currentUserId) {
         socket.off(
           `new-claim-owner-${currentUserId}`,
@@ -645,7 +755,9 @@ function App() {
   return (
     <div className="app-root">
 
-      {/* Radar Toast */}
+      {/* =================================================
+          RADAR TOAST
+      ================================================= */}
 
       <RadarAlertToast />
 
@@ -803,27 +915,31 @@ function App() {
         />
       )}
 
-      
- {/* =================================================
-    CLAIMS LIST
-================================================= */}
+      {/* =================================================
+          CLAIMS LIST
+      ================================================= */}
 
-{selectedPingForViewClaims && (
-  <ClaimsListModal
-    ping={selectedPingForViewClaims}
+      {selectedPingForViewClaims && (
+        <ClaimsListModal
+          ping={
+            selectedPingForViewClaims
+          }
 
-    onClose={() =>
-      setSelectedPingForViewClaims(null)
-    }
+          onClose={() =>
+            setSelectedPingForViewClaims(
+              null
+            )
+          }
 
-    onClaimAccepted={() => {
-      // Claim accept hone ke baad modal open rahega
-      // Chat button dikhne ke liye
-    }}
-  />
-)}
-           </div>
-         );
-       }
+          onClaimAccepted={() => {
+            // Claim accept hone ke baad modal open rahega
+            // Chat button dikhne ke liye
+          }}
+        />
+      )}
+
+    </div>
+  );
+}
 
 export default App;
