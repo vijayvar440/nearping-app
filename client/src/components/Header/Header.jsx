@@ -35,7 +35,6 @@ const Header = ({
         {/* 📍 LOGO */}
         <div className="brand-logo">
           <span className="logo-icon">📍</span>
-
           <span className="logo-text">
             NearPing
           </span>
@@ -58,7 +57,7 @@ const Header = ({
           <button
             className="header-icon-btn messages-btn"
             onClick={handleMessagesClick}
-            title={user ? "Messages" : "Login to view Messages"}
+            title="Messages"
           >
             💬
           </button>
@@ -67,7 +66,11 @@ const Header = ({
           <button
             className="header-icon-btn profile-btn"
             onClick={handleProfileClick}
-            title={user ? "My Profile" : "Login / Register"}
+            title={
+              user
+                ? "My Profile"
+                : "Login / Register"
+            }
           >
             👤
           </button>

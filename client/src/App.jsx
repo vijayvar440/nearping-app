@@ -21,32 +21,35 @@ import { io } from "socket.io-client";
 
 import "./App.css";
 
+
 // =====================================================
-// SOCKET CONNECTION
+// SOCKET
 // =====================================================
 
 const socket = io(
   "https://nearping-app.onrender.com"
 );
 
+
 // =====================================================
-// 🔊 NOTIFICATION SOUND
+// NOTIFICATION SOUND
 // =====================================================
 
-const playAlertSound = (isEmergency) => {
+const playAlertSound = (isEmergency = false) => {
   const soundUrl = isEmergency
     ? "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
     : "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3";
 
   const audio = new Audio(soundUrl);
 
-  audio.play().catch((err) =>
+  audio.play().catch((err) => {
     console.log(
-      "Audio play blocked by browser policy:",
+      "Audio play blocked:",
       err
-    )
-  );
+    );
+  });
 };
+
 
 // =====================================================
 // APP
@@ -56,11 +59,13 @@ function App() {
   const { coords } =
     useContext(LocationContext);
 
+
   // ===================================================
   // STATES
   // ===================================================
 
-  const [pings, setPings] = useState([]);
+  const [pings, setPings] =
+    useState([]);
 
   const [resolvedPings, setResolvedPings] =
     useState([]);
@@ -77,10 +82,8 @@ function App() {
   const [isProfileOpen, setIsProfileOpen] =
     useState(false);
 
-  const [
-    selectedPingForClaim,
-    setSelectedPingForClaim,
-  ] = useState(null);
+  const [selectedPingForClaim, setSelectedPingForClaim] =
+    useState(null);
 
   const [
     selectedPingForViewClaims,
@@ -90,8 +93,9 @@ function App() {
   const [selectedLocation, setSelectedLocation] =
     useState(null);
 
+
   // ===================================================
-  // 👤 GET LOGGED-IN USER ID
+  // GET LOGGED-IN USER ID
   // ===================================================
 
   const getLoggedInUserId = () => {
@@ -102,10 +106,13 @@ function App() {
         localStorage.getItem("authUser");
 
       if (!savedUserData) {
-        return localStorage.getItem("userId");
+        return (
+          localStorage.getItem("userId") ||
+          null
+        );
       }
 
-      // Agar direct ID saved hai
+      // Direct MongoDB ID
       if (
         typeof savedUserData === "string" &&
         /^[a-f\d]{24}$/i.test(
@@ -124,12 +131,13 @@ function App() {
         parsed?.user?._id ||
         parsed?.user?.id ||
         parsed?.data?._id ||
+        localStorage.getItem("userId") ||
         null
       );
-    } catch (err) {
+    } catch (error) {
       console.error(
         "Get logged user error:",
-        err
+        error
       );
 
       return (
@@ -139,11 +147,14 @@ function App() {
     }
   };
 
+
   // ===================================================
-  // 👤 GLOBAL SOCKET USER ROOM
+  // JOIN USER SOCKET ROOM
   // ===================================================
 
   useEffect(() => {
+    let interval = null;
+
     const joinUserRoom = () => {
       const userId =
         getLoggedInUserId();
@@ -161,27 +172,30 @@ function App() {
         "join-user",
         String(userId)
       );
+
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
     };
 
-    // Immediately try
     joinUserRoom();
 
-    /*
-      Login ke baad localStorage update hone par
-      user room join karne ke liye har second check.
-    */
-    const interval = setInterval(
+    interval = setInterval(
       joinUserRoom,
       1000
     );
 
     return () => {
-      clearInterval(interval);
+      if (interval) {
+        clearInterval(interval);
+      }
     };
   }, []);
 
+
   // ===================================================
-  // 🗑️ DELETE PING
+  // DELETE PING FROM UI
   // ===================================================
 
   const handleDeletePing = (
@@ -205,8 +219,9 @@ function App() {
     );
   };
 
+
   // ===================================================
-  // 🔔 BROWSER NOTIFICATION PERMISSION
+  // NOTIFICATION PERMISSION
   // ===================================================
 
   useEffect(() => {
@@ -218,30 +233,27 @@ function App() {
     }
   }, []);
 
+
   // ===================================================
-  // 📍 FETCH NEARBY PINGS
+  // FETCH NEARBY PINGS
   // ===================================================
 
   useEffect(() => {
-    if (!coords) return;
+    if (!coords) {
+      return;
+    }
 
     const fetchPings = async () => {
       try {
-        // Backend radius KM mein expect karta hai.
-        // Isliye yahan *1000 nahi karna.
-
-        const res = await axios.get(
-          `https://nearping-app.onrender.com/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=${radius}`
-        );
+        const response =
+          await axios.get(
+            `https://nearping-app.onrender.com/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=${radius}`
+          );
 
         const allPings =
-          Array.isArray(res.data)
-            ? res.data
+          Array.isArray(response.data)
+            ? response.data
             : [];
-
-        // =================================================
-        // ⏰ FRONTEND EXPIRY PROTECTION
-        // =================================================
 
         const now = Date.now();
 
@@ -262,10 +274,6 @@ function App() {
             );
           });
 
-        // =================================================
-        // 📚 RESOLVED HISTORY
-        // =================================================
-
         const historyPings =
           allPings.filter(
             (ping) =>
@@ -273,14 +281,11 @@ function App() {
           );
 
         setPings(activePings);
-
-        setResolvedPings(
-          historyPings
-        );
-      } catch (err) {
+        setResolvedPings(historyPings);
+      } catch (error) {
         console.error(
           "App fetch error:",
-          err
+          error
         );
       }
     };
@@ -288,36 +293,32 @@ function App() {
     fetchPings();
   }, [coords, radius]);
 
+
   // ===================================================
-  // ⏰ AUTOMATICALLY REMOVE EXPIRED ALERTS
+  // REMOVE EXPIRED PINGS
   // ===================================================
 
   useEffect(() => {
-    const removeExpiredPings =
-      () => {
-        const now = Date.now();
+    const removeExpiredPings = () => {
+      const now = Date.now();
 
-        setPings((prevPings) =>
-          prevPings.filter(
-            (ping) => {
-              if (!ping.expiresAt) {
-                return true;
-              }
+      setPings((prevPings) =>
+        prevPings.filter((ping) => {
+          if (!ping.expiresAt) {
+            return true;
+          }
 
-              return (
-                new Date(
-                  ping.expiresAt
-                ).getTime() > now
-              );
-            }
-          )
-        );
-      };
+          return (
+            new Date(
+              ping.expiresAt
+            ).getTime() > now
+          );
+        })
+      );
+    };
 
-    // Immediately check
     removeExpiredPings();
 
-    // Har 30 seconds check
     const interval =
       setInterval(
         removeExpiredPings,
@@ -328,341 +329,257 @@ function App() {
       clearInterval(interval);
   }, []);
 
+
   // ===================================================
-  // 📡 SOCKET.IO EVENTS
+  // SOCKET EVENTS
   // ===================================================
 
   useEffect(() => {
-    // =================================================
-    // 🆕 NEW PING
-    // =================================================
 
-    const handleNewPing =
-      (newPing) => {
-        // Expired ping ko add mat karo
+    // -------------------------------------------------
+    // NEW PING
+    // -------------------------------------------------
 
-        if (
-          newPing.expiresAt &&
-          new Date(
-            newPing.expiresAt
-          ).getTime() <= Date.now()
-        ) {
-          return;
-        }
+    const handleNewPing = (newPing) => {
+      if (
+        newPing.expiresAt &&
+        new Date(
+          newPing.expiresAt
+        ).getTime() <= Date.now()
+      ) {
+        return;
+      }
 
-        setPings((prev) => {
-          // Duplicate ping avoid karo
-
-          const alreadyExists =
-            prev.some(
-              (ping) =>
-                String(
-                  ping._id
-                ) ===
-                String(
-                  newPing._id
-                )
-            );
-
-          if (alreadyExists) {
-            return prev;
-          }
-
-          return [
-            newPing,
-            ...prev,
-          ];
-        });
-
-        // 🚨 Sound
-
-        const isEmergency =
-          newPing.alertType ===
-          "EMERGENCY";
-
-        playAlertSound(
-          isEmergency
-        );
-
-        // 🔔 Browser notification
-
-        if (
-          "Notification" in window &&
-          Notification.permission ===
-            "granted"
-        ) {
-          new Notification(
-            isEmergency
-              ? "🚨 EMERGENCY ALERT!"
-              : "📡 Naya Radar Alert",
-            {
-              body: `${
-                newPing.title
-              } - ${
-                newPing.landmark ||
-                "Location check karein"
-              }`,
-              icon: "/favicon.ico",
-            }
+      setPings((prevPings) => {
+        const alreadyExists =
+          prevPings.some(
+            (ping) =>
+              String(ping._id) ===
+              String(newPing._id)
           );
-        }
-      };
 
-    // =================================================
-    // ✅ PING RESOLVED
-    // =================================================
+        if (alreadyExists) {
+          return prevPings;
+        }
+
+        return [
+          newPing,
+          ...prevPings,
+        ];
+      });
+
+      const isEmergency =
+        newPing.alertType ===
+        "EMERGENCY";
+
+      playAlertSound(
+        isEmergency
+      );
+
+      if (
+        "Notification" in window &&
+        Notification.permission === "granted"
+      ) {
+        new Notification(
+          isEmergency
+            ? "🚨 EMERGENCY ALERT!"
+            : "📡 Naya Radar Alert",
+          {
+            body: `${newPing.title} - ${
+              newPing.landmark ||
+              "Location check karein"
+            }`,
+            icon: "/favicon.ico",
+          }
+        );
+      }
+    };
+
+
+    // -------------------------------------------------
+    // PING RESOLVED
+    // -------------------------------------------------
 
     const handlePingResolved = ({
       pingId,
     }) => {
-      setPings((prev) => {
-        const found =
-          prev.find(
-            (p) =>
-              String(
-                p._id
-              ) ===
-              String(
-                pingId
-              )
+      setPings((prevPings) => {
+        const foundPing =
+          prevPings.find(
+            (ping) =>
+              String(ping._id) ===
+              String(pingId)
           );
 
-        if (found) {
+        if (foundPing) {
           setResolvedPings(
-            (res) => [
+            (prevResolved) => [
               {
-                ...found,
-                status:
-                  "RESOLVED",
+                ...foundPing,
+                status: "RESOLVED",
               },
-              ...res,
+              ...prevResolved,
             ]
           );
         }
 
-        return prev.filter(
-          (p) =>
-            String(
-              p._id
-            ) !==
-            String(
-              pingId
-            )
+        return prevPings.filter(
+          (ping) =>
+            String(ping._id) !==
+            String(pingId)
         );
       });
     };
 
-    // =================================================
-    // 🗑️ PING DELETED
-    // =================================================
+
+    // -------------------------------------------------
+    // PING DELETED
+    // -------------------------------------------------
 
     const handlePingDeleted = ({
       pingId,
     }) => {
-      setPings((prev) =>
-        prev.filter(
-          (p) =>
-            String(
-              p._id
-            ) !==
-            String(
-              pingId
-            )
+      setPings((prevPings) =>
+        prevPings.filter(
+          (ping) =>
+            String(ping._id) !==
+            String(pingId)
         )
       );
 
       setResolvedPings(
-        (prev) =>
-          prev.filter(
-            (p) =>
-              String(
-                p._id
-              ) !==
-              String(
-                pingId
-              )
+        (prevResolved) =>
+          prevResolved.filter(
+            (ping) =>
+              String(ping._id) !==
+              String(pingId)
           )
       );
     };
 
-    // =================================================
-    // 🔔 EXISTING NEW CLAIM
-    // =================================================
 
-    const handleNewClaim =
-      (claimData) => {
-        const currentUserId =
-          getLoggedInUserId();
+    // -------------------------------------------------
+    // NEW CLAIM
+    // -------------------------------------------------
 
-        const targetPingId =
-          claimData.ping ||
-          claimData.pingId;
+    const handleNewClaim = (
+      claimData
+    ) => {
+      const currentUserId =
+        getLoggedInUserId();
 
-        setPings(
-          (currentPings) => {
-            const matchedPing =
-              currentPings.find(
-                (p) =>
-                  String(
-                    p._id
-                  ) ===
-                  String(
-                    targetPingId
-                  )
-              );
+      const targetPingId =
+        claimData.ping ||
+        claimData.pingId;
 
-            if (matchedPing) {
-              const ownerId =
-                typeof matchedPing.user ===
-                "object"
-                  ? matchedPing
-                      .user?._id ||
-                    matchedPing
-                      .user?.id
-                  : matchedPing.user;
+      setPings((currentPings) => {
+        const matchedPing =
+          currentPings.find(
+            (ping) =>
+              String(ping._id) ===
+              String(targetPingId)
+          );
 
-              const isLoggedInOwner =
-                Boolean(
-                  currentUserId &&
-                    ownerId &&
-                    String(
-                      currentUserId
-                    ).trim() ===
-                      String(
-                        ownerId
-                      ).trim()
-                );
+        if (!matchedPing) {
+          return currentPings;
+        }
 
-              let myCreated = [];
+        const ownerId =
+          typeof matchedPing.user ===
+          "object"
+            ? matchedPing.user?._id ||
+              matchedPing.user?.id
+            : matchedPing.user;
 
-              try {
-                myCreated =
-                  JSON.parse(
-                    localStorage.getItem(
-                      "myCreatedPings"
-                    ) || "[]"
-                  );
-              } catch (error) {
-                myCreated = [];
-              }
+        const isLoggedInOwner =
+          Boolean(
+            currentUserId &&
+            ownerId &&
+            String(currentUserId).trim() ===
+              String(ownerId).trim()
+          );
 
-              const isBrowserOwner =
-                myCreated.includes(
-                  matchedPing._id
-                );
+        let myCreated = [];
 
-              if (
-                isLoggedInOwner ||
-                isBrowserOwner
-              ) {
-                alert(
-                  `🔔 Naya Claim aaya hai aapke alert "${matchedPing.title}" par!`
-                );
-              }
-            }
+        try {
+          myCreated =
+            JSON.parse(
+              localStorage.getItem(
+                "myCreatedPings"
+              ) || "[]"
+            );
+        } catch {
+          myCreated = [];
+        }
 
-            return currentPings;
-          }
-        );
-      };
+        const isBrowserOwner =
+          myCreated.includes(
+            matchedPing._id
+          );
 
-    // =================================================
-    // 🔔 OWNER-SPECIFIC NEW CLAIM
-    // =================================================
+        if (
+          isLoggedInOwner ||
+          isBrowserOwner
+        ) {
+          alert(
+            `🔔 Naya Claim aaya hai aapke alert "${matchedPing.title}" par!`
+          );
+        }
+
+        return currentPings;
+      });
+    };
+
+
+    // -------------------------------------------------
+    // OWNER-SPECIFIC NEW CLAIM
+    // -------------------------------------------------
 
     const currentUserId =
       getLoggedInUserId();
 
-    const handleOwnerNewClaim =
-      (claimData) => {
-        console.log(
-          "🔔 Owner New Claim:",
-          claimData
+    const handleOwnerNewClaim = (
+      claimData
+    ) => {
+      if (!claimData) {
+        return;
+      }
+
+      console.log(
+        "🔔 Owner New Claim:",
+        claimData
+      );
+
+      playAlertSound(false);
+
+      if (
+        "Notification" in window &&
+        Notification.permission ===
+          "granted"
+      ) {
+        new Notification(
+          "🔔 NearPing - New Claim",
+          {
+            body:
+              claimData.message ||
+              "Kisi ne aapka lost item found kiya hai.",
+            icon: "/favicon.ico",
+          }
         );
+      }
 
-        if (!claimData) {
-          return;
-        }
+      alert(
+        `🔔 ${
+          claimData.message ||
+          "Kisi ne aapka lost item found kiya hai."
+        }`
+      );
+    };
 
-        // Sound
-        playAlertSound(false);
 
-        // Browser notification
-        if (
-          "Notification" in window &&
-          Notification.permission ===
-            "granted"
-        ) {
-          new Notification(
-            "🔔 NearPing - New Claim",
-            {
-              body:
-                claimData.message ||
-                "Kisi ne aapka lost item found kiya hai.",
-              icon: "/favicon.ico",
-            }
-          );
-        }
-
-        // Screen alert
-        alert(
-          `🔔 ${
-            claimData.message ||
-            "Kisi ne aapka lost item found kiya hai."
-          }`
-        );
-      };
-
-    // =================================================
-    // 💬 CLAIM CHAT MESSAGE
-    // =================================================
-
-    const handleClaimChatMessage =
-      (newMessage) => {
-        console.log(
-          "💬 Incoming Claim Chat Message:",
-          newMessage
-        );
-
-        if (!newMessage) {
-          return;
-        }
-
-        const senderName =
-          newMessage.sender?.name ||
-          "Someone";
-
-        const messageText =
-          newMessage.message ||
-          "New message received";
-
-        // 🔊 Sound
-        playAlertSound(false);
-
-        // 🔔 Browser notification
-        if (
-          "Notification" in window &&
-          Notification.permission ===
-            "granted"
-        ) {
-          new Notification(
-            `💬 Message from ${senderName}`,
-            {
-              body: messageText,
-              icon: "/favicon.ico",
-            }
-          );
-        }
-
-        // Screen alert
-        alert(
-          `💬 ${senderName}\n\n${messageText}`
-        );
-      };
-
-    // =================================================
-    // SOCKET LISTENERS
-    // =================================================
+    // -------------------------------------------------
+    // REGISTER SOCKET EVENTS
+    // -------------------------------------------------
 
     socket.on(
       "new-ping",
@@ -684,14 +601,6 @@ function App() {
       handleNewClaim
     );
 
-    // 💬 Chat message
-    socket.on(
-      "claim-chat-message",
-      handleClaimChatMessage
-    );
-
-    // Owner-specific listener
-
     if (currentUserId) {
       socket.on(
         `new-claim-owner-${currentUserId}`,
@@ -699,9 +608,10 @@ function App() {
       );
     }
 
-    // =================================================
-    // 🧹 CLEANUP
-    // =================================================
+
+    // -------------------------------------------------
+    // CLEANUP
+    // -------------------------------------------------
 
     return () => {
       socket.off(
@@ -724,11 +634,6 @@ function App() {
         handleNewClaim
       );
 
-      socket.off(
-        "claim-chat-message",
-        handleClaimChatMessage
-      );
-
       if (currentUserId) {
         socket.off(
           `new-claim-owner-${currentUserId}`,
@@ -738,15 +643,16 @@ function App() {
     };
   }, []);
 
+
   // ===================================================
-  // ❌ CLOSE CREATE PING MODAL
+  // CLOSE CREATE PING MODAL
   // ===================================================
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-
     setSelectedLocation(null);
   };
+
 
   // ===================================================
   // RETURN
@@ -755,76 +661,52 @@ function App() {
   return (
     <div className="app-root">
 
-      {/* =================================================
-          RADAR TOAST
-      ================================================= */}
-
+      {/* RADAR ALERT */}
       <RadarAlertToast />
 
-      {/* =================================================
-          HEADER
-      ================================================= */}
 
+      {/* HEADER */}
       <Header
-        onOpenModal={() =>
-          setIsModalOpen(true)
-        }
-
-        onOpenAuthModal={() =>
-          setIsAuthModalOpen(true)
-        }
-
-        onOpenProfile={() =>
-          setIsProfileOpen(true)
-        }
+        onOpenModal={() => {
+          setIsModalOpen(true);
+        }}
+        onOpenAuthModal={() => {
+          setIsAuthModalOpen(true);
+        }}
+        onOpenProfile={() => {
+          setIsProfileOpen(true);
+        }}
       />
 
-      {/* =================================================
-          MAIN LAYOUT
-      ================================================= */}
 
+      {/* MAIN */}
       <main className="main-layout">
 
-        {/* =================================================
-            MAP
-        ================================================= */}
-
+        {/* MAP */}
         <div className="map-section">
-
           <MapView
             selectedLocation={
               selectedLocation
             }
-
             setSelectedLocation={
               setSelectedLocation
             }
-
             setIsModalOpen={
               setIsModalOpen
             }
           />
-
         </div>
 
-        {/* =================================================
-            ALERTS
-        ================================================= */}
 
+        {/* PING FEED */}
         <div className="feed-section">
-
           <PingFeed
             pings={pings}
-
             resolvedPings={
               resolvedPings
             }
-
             radius={radius}
-
-            setRadius={
-              setRadius
-            }
+            setRadius={setRadius}
 
             onClaimClick={(ping) =>
               setSelectedPingForClaim(
@@ -842,98 +724,64 @@ function App() {
               handleDeletePing
             }
           />
-
         </div>
 
       </main>
 
-      {/* =================================================
-          CREATE PING
-      ================================================= */}
 
+      {/* CREATE PING MODAL */}
       <CreatePingModal
-        isOpen={
-          isModalOpen
-        }
-
-        onClose={
-          handleCloseModal
-        }
-
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
         selectedLocation={
           selectedLocation
         }
       />
 
-      {/* =================================================
-          AUTH
-      ================================================= */}
 
+      {/* AUTH MODAL */}
       <AuthModal
-        isOpen={
-          isAuthModalOpen
-        }
-
+        isOpen={isAuthModalOpen}
         onClose={() =>
-          setIsAuthModalOpen(
-            false
-          )
+          setIsAuthModalOpen(false)
         }
       />
 
-      {/* =================================================
-          PROFILE
-      ================================================= */}
 
+      {/* PROFILE */}
       <Profile
-        isOpen={
-          isProfileOpen
-        }
-
+        isOpen={isProfileOpen}
         onClose={() =>
-          setIsProfileOpen(
-            false
-          )
+          setIsProfileOpen(false)
         }
       />
 
-      {/* =================================================
-          CLAIM
-      ================================================= */}
 
+      {/* CLAIM MODAL */}
       {selectedPingForClaim && (
         <ClaimModal
-          ping={
-            selectedPingForClaim
-          }
-
+          ping={selectedPingForClaim}
           onClose={() =>
-            setSelectedPingForClaim(
-              null
-            )
+            setSelectedPingForClaim(null)
           }
         />
       )}
 
-      {/* =================================================
-          CLAIMS LIST
-      ================================================= */}
 
+      {/* CLAIMS LIST */}
       {selectedPingForViewClaims && (
         <ClaimsListModal
           ping={
             selectedPingForViewClaims
           }
-
           onClose={() =>
             setSelectedPingForViewClaims(
               null
             )
           }
-
           onClaimAccepted={() => {
-            // Claim accept hone ke baad modal open rahega
-            // Chat button dikhne ke liye
+            // Claim accept ke baad
+            // modal open rahega
           }}
         />
       )}

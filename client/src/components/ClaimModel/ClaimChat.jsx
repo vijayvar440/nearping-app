@@ -11,16 +11,49 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const messagesEndRef = useRef(null);
 
-  const currentUserId =
-    localStorage.getItem("userId") ||
-    localStorage.getItem("user");
+  // ===============================
+  // CURRENT USER ID
+  // ===============================
+  const getCurrentUserId = () => {
+    const userId = localStorage.getItem("userId");
 
+    if (userId) {
+      return userId;
+    }
+
+    const storedUser = localStorage.getItem("user");
+
+    if (!storedUser) {
+      return null;
+    }
+
+    try {
+      const parsedUser = JSON.parse(storedUser);
+
+      return (
+        parsedUser?._id ||
+        parsedUser?.id ||
+        parsedUser?.user?._id ||
+        parsedUser?.user?.id ||
+        null
+      );
+    } catch {
+      return storedUser;
+    }
+  };
+
+  const currentUserId = getCurrentUserId();
+
+  // ===============================
+  // FINDER ID
+  // ===============================
   const finderId =
     typeof finder === "object"
-      ? finder?._id
+      ? finder?._id || finder?.id
       : finder;
 
   // ===============================
@@ -78,9 +111,12 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
   useEffect(() => {
     if (!currentUserId) return;
 
-    // User private room join
-    socket.emit("join-user", currentUserId);
+    // Join private user room
+    socket.emit("join-user", String(currentUserId));
 
+    // ===============================
+    // NEW MESSAGE
+    // ===============================
     const handleNewMessage = (newMessage) => {
       const senderId =
         newMessage.sender?._id ||
@@ -99,9 +135,8 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
       if (!isThisChat) return;
 
       setMessages((prev) => {
-        // Duplicate prevent
         const exists = prev.some(
-          (msg) => msg._id === newMessage._id
+          (msg) => String(msg._id) === String(newMessage._id)
         );
 
         if (exists) return prev;
@@ -112,15 +147,39 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
       scrollToBottom();
     };
 
+    // ===============================
+    // MESSAGE DELETED
+    // ===============================
+    const handleMessageDeleted = (data) => {
+      if (!data?.messageId) return;
+
+      setMessages((prev) =>
+        prev.filter(
+          (msg) =>
+            String(msg._id) !== String(data.messageId)
+        )
+      );
+    };
+
     socket.on(
       "claim-chat-message",
       handleNewMessage
+    );
+
+    socket.on(
+      "claim-chat-message-deleted",
+      handleMessageDeleted
     );
 
     return () => {
       socket.off(
         "claim-chat-message",
         handleNewMessage
+      );
+
+      socket.off(
+        "claim-chat-message-deleted",
+        handleMessageDeleted
       );
     };
   }, [currentUserId, finderId]);
@@ -133,6 +192,11 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
 
     if (!finderId) {
       alert("Finder information nahi mila.");
+      return;
+    }
+
+    if (!claim?._id) {
+      alert("Claim information nahi mila.");
       return;
     }
 
@@ -159,7 +223,9 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
 
         setMessages((prev) => {
           const exists = prev.some(
-            (msg) => msg._id === sentMessage._id
+            (msg) =>
+              String(msg._id) ===
+              String(sentMessage._id)
           );
 
           if (exists) return prev;
@@ -183,6 +249,56 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
       );
     } finally {
       setSending(false);
+    }
+  };
+
+  // ===============================
+  // DELETE MESSAGE
+  // ===============================
+  const deleteMessage = async (messageId) => {
+    if (!messageId || deletingId) return;
+
+    const confirmDelete = window.confirm(
+      "Kya aap ye message delete karna chahte hain?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setDeletingId(messageId);
+
+      const token = localStorage.getItem("token");
+
+      const res = await axios.delete(
+        `${API_URL}/api/messages/${messageId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.data.success) {
+        setMessages((prev) =>
+          prev.filter(
+            (msg) =>
+              String(msg._id) !==
+              String(messageId)
+          )
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Delete message error:",
+        error.response?.data || error.message
+      );
+
+      alert(
+        error.response?.data?.message ||
+          "Message delete nahi ho paya."
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -212,7 +328,9 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
   };
 
   const finderName =
-    finder?.name || "Finder";
+    typeof finder === "object"
+      ? finder?.name || "Finder"
+      : "Finder";
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 z-[10000]">
@@ -245,7 +363,7 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
 
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-white"
+            className="text-slate-500 hover:text-white text-lg"
           >
             ✕
           </button>
@@ -288,7 +406,6 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
             </div>
           ) : (
             messages.map((message) => {
-
               const senderId =
                 message.sender?._id ||
                 message.sender;
@@ -307,27 +424,55 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
                   }`}
                 >
                   <div
-                    className={`max-w-[78%] px-4 py-2.5 rounded-2xl ${
+                    className={`group relative max-w-[78%] px-4 py-2.5 rounded-2xl ${
                       isMine
                         ? "bg-indigo-600 text-white rounded-br-md"
                         : "bg-slate-800 text-slate-200 rounded-bl-md"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">
+
+                    {/* MESSAGE */}
+                    <p className="text-sm whitespace-pre-wrap break-words pr-1">
                       {message.message}
                     </p>
 
-                    <p
-                      className={`text-[10px] mt-1 ${
-                        isMine
-                          ? "text-indigo-200"
-                          : "text-slate-500"
-                      }`}
-                    >
-                      {formatTime(
-                        message.createdAt
+                    {/* TIME + DELETE */}
+                    <div className="flex items-center justify-end gap-2 mt-1">
+
+                      <p
+                        className={`text-[10px] ${
+                          isMine
+                            ? "text-indigo-200"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        {formatTime(
+                          message.createdAt
+                        )}
+                      </p>
+
+                      {/* DELETE ONLY OWN MESSAGE */}
+                      {isMine && (
+                        <button
+                          onClick={() =>
+                            deleteMessage(
+                              message._id
+                            )
+                          }
+                          disabled={
+                            deletingId ===
+                            message._id
+                          }
+                          title="Delete message"
+                          className="text-[10px] text-red-200 hover:text-white opacity-70 hover:opacity-100 transition disabled:opacity-40"
+                        >
+                          {deletingId ===
+                          message._id
+                            ? "..."
+                            : "🗑️"}
+                        </button>
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
               );
