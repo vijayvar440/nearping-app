@@ -13,23 +13,21 @@ import ClaimModal from "./components/ClaimModel/ClaimModal";
 import ClaimsListModal from "./components/ClaimModel/ClaimsListModal";
 import RadarAlertToast from "./components/RadarAlertToast/RadarAlertToast";
 import Profile from "./components/Profile/Profile";
+import MessagesModal from "./components/MessagesModal/MessagesModal";
 
 import { LocationContext } from "./context/LocationContext";
+import { AuthContext } from "./context/AuthContext";
 
 import axios from "axios";
 import { io } from "socket.io-client";
 
 import "./App.css";
 
-
 // =====================================================
 // SOCKET
 // =====================================================
 
-const socket = io(
-  "https://nearping-app.onrender.com"
-);
-
+const socket = io("https://nearping-app.onrender.com");
 
 // =====================================================
 // NOTIFICATION SOUND
@@ -43,44 +41,32 @@ const playAlertSound = (isEmergency = false) => {
   const audio = new Audio(soundUrl);
 
   audio.play().catch((err) => {
-    console.log(
-      "Audio play blocked:",
-      err
-    );
+    console.log("Audio play blocked:", err);
   });
 };
-
 
 // =====================================================
 // APP
 // =====================================================
 
 function App() {
-  const { coords } =
-    useContext(LocationContext);
-
+  const { coords } = useContext(LocationContext);
+  const { user } = useContext(AuthContext);
 
   // ===================================================
   // STATES
   // ===================================================
 
-  const [pings, setPings] =
-    useState([]);
+  const [pings, setPings] = useState([]);
+  const [resolvedPings, setResolvedPings] = useState([]);
 
-  const [resolvedPings, setResolvedPings] =
-    useState([]);
+  const [radius, setRadius] = useState(5);
 
-  const [radius, setRadius] =
-    useState(5);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const [isModalOpen, setIsModalOpen] =
-    useState(false);
-
-  const [isAuthModalOpen, setIsAuthModalOpen] =
-    useState(false);
-
-  const [isProfileOpen, setIsProfileOpen] =
-    useState(false);
+  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
 
   const [selectedPingForClaim, setSelectedPingForClaim] =
     useState(null);
@@ -92,7 +78,6 @@ function App() {
 
   const [selectedLocation, setSelectedLocation] =
     useState(null);
-
 
   // ===================================================
   // GET LOGGED-IN USER ID
@@ -112,18 +97,14 @@ function App() {
         );
       }
 
-      // Direct MongoDB ID
       if (
         typeof savedUserData === "string" &&
-        /^[a-f\d]{24}$/i.test(
-          savedUserData
-        )
+        /^[a-f\d]{24}$/i.test(savedUserData)
       ) {
         return savedUserData;
       }
 
-      const parsed =
-        JSON.parse(savedUserData);
+      const parsed = JSON.parse(savedUserData);
 
       return (
         parsed?._id ||
@@ -147,7 +128,6 @@ function App() {
     }
   };
 
-
   // ===================================================
   // JOIN USER SOCKET ROOM
   // ===================================================
@@ -157,6 +137,8 @@ function App() {
 
     const joinUserRoom = () => {
       const userId =
+        user?._id ||
+        user?.id ||
         getLoggedInUserId();
 
       if (!userId) {
@@ -191,16 +173,13 @@ function App() {
         clearInterval(interval);
       }
     };
-  }, []);
-
+  }, [user]);
 
   // ===================================================
   // DELETE PING FROM UI
   // ===================================================
 
-  const handleDeletePing = (
-    deletedPingId
-  ) => {
+  const handleDeletePing = (deletedPingId) => {
     setPings((prevPings) =>
       prevPings.filter(
         (ping) =>
@@ -209,16 +188,14 @@ function App() {
       )
     );
 
-    setResolvedPings(
-      (prevResolved) =>
-        prevResolved.filter(
-          (ping) =>
-            String(ping._id) !==
-            String(deletedPingId)
-        )
+    setResolvedPings((prevResolved) =>
+      prevResolved.filter(
+        (ping) =>
+          String(ping._id) !==
+          String(deletedPingId)
+      )
     );
   };
-
 
   // ===================================================
   // NOTIFICATION PERMISSION
@@ -233,7 +210,6 @@ function App() {
     }
   }, []);
 
-
   // ===================================================
   // FETCH NEARBY PINGS
   // ===================================================
@@ -245,10 +221,9 @@ function App() {
 
     const fetchPings = async () => {
       try {
-        const response =
-          await axios.get(
-            `https://nearping-app.onrender.com/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=${radius}`
-          );
+        const response = await axios.get(
+          `https://nearping-app.onrender.com/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=${radius}`
+        );
 
         const allPings =
           Array.isArray(response.data)
@@ -293,7 +268,6 @@ function App() {
     fetchPings();
   }, [coords, radius]);
 
-
   // ===================================================
   // REMOVE EXPIRED PINGS
   // ===================================================
@@ -319,23 +293,20 @@ function App() {
 
     removeExpiredPings();
 
-    const interval =
-      setInterval(
-        removeExpiredPings,
-        30000
-      );
+    const interval = setInterval(
+      removeExpiredPings,
+      30000
+    );
 
     return () =>
       clearInterval(interval);
   }, []);
-
 
   // ===================================================
   // SOCKET EVENTS
   // ===================================================
 
   useEffect(() => {
-
     // -------------------------------------------------
     // NEW PING
     // -------------------------------------------------
@@ -372,9 +343,7 @@ function App() {
         newPing.alertType ===
         "EMERGENCY";
 
-      playAlertSound(
-        isEmergency
-      );
+      playAlertSound(isEmergency);
 
       if (
         "Notification" in window &&
@@ -394,7 +363,6 @@ function App() {
         );
       }
     };
-
 
     // -------------------------------------------------
     // PING RESOLVED
@@ -431,7 +399,6 @@ function App() {
       });
     };
 
-
     // -------------------------------------------------
     // PING DELETED
     // -------------------------------------------------
@@ -457,7 +424,6 @@ function App() {
       );
     };
 
-
     // -------------------------------------------------
     // NEW CLAIM
     // -------------------------------------------------
@@ -466,6 +432,8 @@ function App() {
       claimData
     ) => {
       const currentUserId =
+        user?._id ||
+        user?.id ||
         getLoggedInUserId();
 
       const targetPingId =
@@ -494,20 +462,19 @@ function App() {
         const isLoggedInOwner =
           Boolean(
             currentUserId &&
-            ownerId &&
-            String(currentUserId).trim() ===
-              String(ownerId).trim()
+              ownerId &&
+              String(currentUserId).trim() ===
+                String(ownerId).trim()
           );
 
         let myCreated = [];
 
         try {
-          myCreated =
-            JSON.parse(
-              localStorage.getItem(
-                "myCreatedPings"
-              ) || "[]"
-            );
+          myCreated = JSON.parse(
+            localStorage.getItem(
+              "myCreatedPings"
+            ) || "[]"
+          );
         } catch {
           myCreated = [];
         }
@@ -530,12 +497,13 @@ function App() {
       });
     };
 
-
     // -------------------------------------------------
     // OWNER-SPECIFIC NEW CLAIM
     // -------------------------------------------------
 
     const currentUserId =
+      user?._id ||
+      user?.id ||
       getLoggedInUserId();
 
     const handleOwnerNewClaim = (
@@ -576,7 +544,6 @@ function App() {
       );
     };
 
-
     // -------------------------------------------------
     // REGISTER SOCKET EVENTS
     // -------------------------------------------------
@@ -602,12 +569,16 @@ function App() {
     );
 
     if (currentUserId) {
+      console.log(
+        "🔔 Listening for owner claims:",
+        `new-claim-owner-${currentUserId}`
+      );
+
       socket.on(
         `new-claim-owner-${currentUserId}`,
         handleOwnerNewClaim
       );
     }
-
 
     // -------------------------------------------------
     // CLEANUP
@@ -641,8 +612,7 @@ function App() {
         );
       }
     };
-  }, []);
-
+  }, [user]);
 
   // ===================================================
   // CLOSE CREATE PING MODAL
@@ -653,6 +623,26 @@ function App() {
     setSelectedLocation(null);
   };
 
+  // ===================================================
+  // OPEN MESSAGES
+  // ===================================================
+
+  const handleOpenMessages = () => {
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setIsMessagesOpen(true);
+  };
+
+  // ===================================================
+  // CLOSE MESSAGES
+  // ===================================================
+
+  const handleCloseMessages = () => {
+    setIsMessagesOpen(false);
+  };
 
   // ===================================================
   // RETURN
@@ -664,20 +654,24 @@ function App() {
       {/* RADAR ALERT */}
       <RadarAlertToast />
 
-
       {/* HEADER */}
       <Header
         onOpenModal={() => {
           setIsModalOpen(true);
         }}
+
         onOpenAuthModal={() => {
           setIsAuthModalOpen(true);
         }}
+
         onOpenProfile={() => {
           setIsProfileOpen(true);
         }}
-      />
 
+        onOpenMessages={
+          handleOpenMessages
+        }
+      />
 
       {/* MAIN */}
       <main className="main-layout">
@@ -696,7 +690,6 @@ function App() {
             }
           />
         </div>
-
 
         {/* PING FEED */}
         <div className="feed-section">
@@ -728,25 +721,26 @@ function App() {
 
       </main>
 
-
       {/* CREATE PING MODAL */}
       <CreatePingModal
         isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        onClose={
+          handleCloseModal
+        }
         selectedLocation={
           selectedLocation
         }
       />
 
-
       {/* AUTH MODAL */}
       <AuthModal
-        isOpen={isAuthModalOpen}
+        isOpen={
+          isAuthModalOpen
+        }
         onClose={() =>
           setIsAuthModalOpen(false)
         }
       />
-
 
       {/* PROFILE */}
       <Profile
@@ -756,17 +750,19 @@ function App() {
         }
       />
 
-
       {/* CLAIM MODAL */}
       {selectedPingForClaim && (
         <ClaimModal
-          ping={selectedPingForClaim}
+          ping={
+            selectedPingForClaim
+          }
           onClose={() =>
-            setSelectedPingForClaim(null)
+            setSelectedPingForClaim(
+              null
+            )
           }
         />
       )}
-
 
       {/* CLAIMS LIST */}
       {selectedPingForViewClaims && (
@@ -783,6 +779,15 @@ function App() {
             // Claim accept ke baad
             // modal open rahega
           }}
+        />
+      )}
+
+      {/* MESSAGES */}
+      {isMessagesOpen && (
+        <MessagesModal
+          onClose={
+            handleCloseMessages
+          }
         />
       )}
 

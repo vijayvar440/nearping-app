@@ -7,16 +7,60 @@ const {
   sendMessage,
   markMessagesSeen,
   deleteMessage,
+  getConversations,
 } = require("../controllers/messageController");
 
 const authMiddleware = require("../middleware/authMiddleware");
 
-router.get("/:userId", authMiddleware, getMessages);
+// =====================================================
+// CONVERSATIONS
+// IMPORTANT: /:userId SE PEHLE
+// =====================================================
 
-router.post("/send/:userId", authMiddleware, sendMessage);
+router.get(
+  "/conversations",
+  authMiddleware,
+  getConversations
+);
 
-router.put("/seen/:userId", authMiddleware, markMessagesSeen);
+// =====================================================
+// MESSAGE HISTORY
+// =====================================================
 
-router.delete("/:messageId", authMiddleware, deleteMessage);
+router.get(
+  "/:userId",
+  authMiddleware,
+  getMessages
+);
+
+// =====================================================
+// SEND MESSAGE
+// =====================================================
+
+router.post(
+  "/send/:userId",
+  authMiddleware,
+  sendMessage
+);
+
+// =====================================================
+// MARK AS SEEN
+// =====================================================
+
+router.put(
+  "/seen/:userId",
+  authMiddleware,
+  markMessagesSeen
+);
+
+// =====================================================
+// DELETE MESSAGE
+// =====================================================
+
+router.delete(
+  "/:messageId",
+  authMiddleware,
+  deleteMessage
+);
 
 module.exports = router;

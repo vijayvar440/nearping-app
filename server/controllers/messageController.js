@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
 const Message = require("../models/Message");
 const Claim = require("../models/Claim");
-
+const Ping = require("../models/Ping");
+const User = require("../models/User");
 const isValidId = (id) => {
   return mongoose.Types.ObjectId.isValid(id);
 };
@@ -467,16 +467,123 @@ const deleteMessage = async (
   }
 };
 
+// =====================================================
+// GET MESSAGE HISTORY / CONVERSATIONS
+// =====================================================
 
-/*
-=========================================================
-EXPORT
-=========================================================
-*/
+const getConversations = async (req, res) => {
+  try {
+    const currentUserId =
+      req.user?.userId || req.user?._id;
+
+    if (!currentUserId) {
+      return res.status(401).json({
+        message: "User authentication required.",
+      });
+    }
+
+    const claims = await Claim.find({
+      status: "ACCEPTED",
+      $or: [
+        { user: currentUserId },
+        {
+          ping: {
+            $in: await Ping.find({
+              user: currentUserId,
+            }).distinct("_id"),
+          },
+        },
+      ],
+    })
+      .populate("user", "name email phone")
+      .populate(
+        "ping",
+        "title type description user"
+      )
+      .sort({ updatedAt: -1 });
+
+    const conversations = [];
+
+    for (const claim of claims) {
+      if (!claim.ping) continue;
+
+      const ownerId = claim.ping.user
+        ? String(claim.ping.user)
+        : null;
+
+      const finderId = claim.user
+        ? String(
+            claim.user._id || claim.user
+          )
+        : null;
+
+      if (!ownerId || !finderId) continue;
+
+      const isOwner =
+        String(currentUserId) === ownerId;
+
+      const otherUserId = isOwner
+        ? finderId
+        : ownerId;
+
+      const otherUser = isOwner
+        ? claim.user
+        : await User.findById(otherUserId)
+            .select("name email phone");
+
+      const lastMessage =
+        await Message.findOne({
+          $or: [
+            {
+              sender: currentUserId,
+              receiver: otherUserId,
+            },
+            {
+              sender: otherUserId,
+              receiver: currentUserId,
+            },
+          ],
+          claimId: claim._id,
+        })
+          .sort({ createdAt: -1 })
+          .select(
+            "message sender receiver createdAt seen"
+          );
+
+      conversations.push({
+        claimId: claim._id,
+        pingId: claim.ping._id,
+        itemTitle: claim.ping.title,
+        claimStatus: claim.status,
+        otherUser,
+        lastMessage,
+      });
+    }
+
+    return res.json({
+      success: true,
+      conversations,
+    });
+  } catch (error) {
+    console.error(
+      "Get conversations error:",
+      error
+    );
+
+    return res.status(500).json({
+      message:
+        "Failed to fetch message history.",
+    });
+  }
+};
+
+
+
 
 module.exports = {
   getMessages,
   sendMessage,
   markMessagesSeen,
   deleteMessage,
+  getConversations,
 };
