@@ -9,31 +9,43 @@ const authMiddleware = (req, res, next) => {
 
     if (!authHeader) {
       return res.status(401).json({
-        message: "Authorization token is required."
+        success: false,
+        message: "Authorization token is required.",
       });
     }
 
     const token = authHeader.startsWith("Bearer ")
-      ? authHeader.split(" ")[1]
-      : authHeader;
+      ? authHeader.slice(7).trim()
+      : authHeader.trim();
 
     if (!token) {
       return res.status(401).json({
-        message: "Invalid authorization token."
+        success: false,
+        message: "Invalid authorization token.",
       });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
 
+    if (!decoded?.userId && !decoded?._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token payload.",
+      });
+    }
+
     req.user = decoded;
 
     next();
-
   } catch (error) {
-    console.error("Auth Middleware Error:", error.message);
+    console.error(
+      "❌ Auth Middleware Error:",
+      error.message
+    );
 
     return res.status(401).json({
-      message: "Invalid or expired token."
+      success: false,
+      message: "Invalid or expired token.",
     });
   }
 };

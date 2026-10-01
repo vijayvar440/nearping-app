@@ -1,23 +1,30 @@
+const mongoose = require("mongoose");
+
 const Message = require("../models/Message");
 const Claim = require("../models/Claim");
 const Ping = require("../models/Ping");
 const User = require("../models/User");
+
+// =====================================================
+// OBJECT ID VALIDATION
+// =====================================================
+
 const isValidId = (id) => {
   return mongoose.Types.ObjectId.isValid(id);
 };
 
-/*
-=========================================================
-GET CHAT
-GET /api/messages/:userId
-=========================================================
-*/
+// =====================================================
+// GET CHAT
+// GET /api/messages/:userId
+// =====================================================
+
 const getMessages = async (req, res) => {
   try {
     const currentUserId =
       req.user?.userId || req.user?._id;
 
-    const otherUserId = req.params.userId;
+    const otherUserId =
+      req.params.userId;
 
     if (!currentUserId) {
       return res.status(401).json({
@@ -73,13 +80,11 @@ const getMessages = async (req, res) => {
   }
 };
 
+// =====================================================
+// SEND MESSAGE
+// POST /api/messages/send/:userId
+// =====================================================
 
-/*
-=========================================================
-SEND MESSAGE
-POST /api/messages/send/:userId
-=========================================================
-*/
 const sendMessage = async (req, res) => {
   try {
     const currentUserId =
@@ -93,12 +98,20 @@ const sendMessage = async (req, res) => {
       claimId,
     } = req.body;
 
+    // -------------------------------------------------
+    // AUTH USER
+    // -------------------------------------------------
+
     if (!currentUserId) {
       return res.status(401).json({
         success: false,
         message: "Login required",
       });
     }
+
+    // -------------------------------------------------
+    // RECEIVER VALIDATION
+    // -------------------------------------------------
 
     if (!isValidId(receiverId)) {
       return res.status(400).json({
@@ -108,7 +121,14 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    if (!message || !message.trim()) {
+    // -------------------------------------------------
+    // MESSAGE VALIDATION
+    // -------------------------------------------------
+
+    if (
+      !message ||
+      !message.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -116,11 +136,9 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    /*
-    =====================================================
-    CLAIM VALIDATION
-    =====================================================
-    */
+    // -------------------------------------------------
+    // CLAIM VALIDATION
+    // -------------------------------------------------
 
     if (!claimId) {
       return res.status(400).json({
@@ -138,6 +156,10 @@ const sendMessage = async (req, res) => {
       });
     }
 
+    // -------------------------------------------------
+    // GET CLAIM
+    // -------------------------------------------------
+
     const claim =
       await Claim.findById(
         claimId
@@ -151,7 +173,14 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    if (claim.status !== "ACCEPTED") {
+    // -------------------------------------------------
+    // CLAIM MUST BE ACCEPTED
+    // -------------------------------------------------
+
+    if (
+      claim.status !==
+      "ACCEPTED"
+    ) {
       return res.status(403).json({
         success: false,
         message:
@@ -159,16 +188,18 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    /*
-    =====================================================
-    OWNER / FINDER
-    =====================================================
-    */
+    // -------------------------------------------------
+    // OWNER
+    // -------------------------------------------------
 
     const ownerId =
       claim.ping?.user
         ? String(claim.ping.user)
         : null;
+
+    // -------------------------------------------------
+    // FINDER
+    // -------------------------------------------------
 
     const finderId =
       claim.user
@@ -181,11 +212,9 @@ const sendMessage = async (req, res) => {
     const targetId =
       String(receiverId);
 
-    /*
-    =====================================================
-    ONLY OWNER <-> FINDER ALLOWED
-    =====================================================
-    */
+    // -------------------------------------------------
+    // ONLY OWNER <-> FINDER
+    // -------------------------------------------------
 
     const validConnection =
       (
@@ -205,25 +234,25 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    /*
-    =====================================================
-    CREATE MESSAGE
-    =====================================================
-    */
+    // -------------------------------------------------
+    // CREATE MESSAGE
+    // -------------------------------------------------
 
     const newMessage =
       await Message.create({
         sender: currentUserId,
+
         receiver: receiverId,
-        message: message.trim(),
+
+        message:
+          message.trim(),
+
         claimId: claimId,
       });
 
-    /*
-    =====================================================
-    POPULATE MESSAGE
-    =====================================================
-    */
+    // -------------------------------------------------
+    // POPULATE MESSAGE
+    // -------------------------------------------------
 
     const populatedMessage =
       await Message.findById(
@@ -238,11 +267,9 @@ const sendMessage = async (req, res) => {
           "_id name email"
         );
 
-    /*
-    =====================================================
-    REAL-TIME SOCKET
-    =====================================================
-    */
+    // -------------------------------------------------
+    // SOCKET
+    // -------------------------------------------------
 
     const io =
       req.app.get("io");
@@ -256,11 +283,9 @@ const sendMessage = async (req, res) => {
       );
     }
 
-    /*
-    =====================================================
-    RESPONSE
-    =====================================================
-    */
+    // -------------------------------------------------
+    // RESPONSE
+    // -------------------------------------------------
 
     return res.status(201).json({
       success: true,
@@ -268,7 +293,6 @@ const sendMessage = async (req, res) => {
       newMessage:
         populatedMessage,
     });
-
   } catch (error) {
     console.error(
       "SEND MESSAGE ERROR:",
@@ -279,17 +303,17 @@ const sendMessage = async (req, res) => {
       success: false,
       message:
         "Message send nahi ho paya",
+      details:
+        error.message,
     });
   }
 };
 
+// =====================================================
+// MARK MESSAGES SEEN
+// PUT /api/messages/seen/:userId
+// =====================================================
 
-/*
-=========================================================
-MARK MESSAGES SEEN
-PUT /api/messages/seen/:userId
-=========================================================
-*/
 const markMessagesSeen = async (
   req,
   res
@@ -321,7 +345,10 @@ const markMessagesSeen = async (
     await Message.updateMany(
       {
         sender: otherUserId,
-        receiver: currentUserId,
+
+        receiver:
+          currentUserId,
+
         seen: false,
       },
       {
@@ -334,7 +361,6 @@ const markMessagesSeen = async (
     return res.json({
       success: true,
     });
-
   } catch (error) {
     console.error(
       "SEEN MESSAGE ERROR:",
@@ -349,13 +375,11 @@ const markMessagesSeen = async (
   }
 };
 
+// =====================================================
+// DELETE MESSAGE
+// DELETE /api/messages/:messageId
+// =====================================================
 
-/*
-=========================================================
-DELETE MESSAGE
-DELETE /api/messages/:messageId
-=========================================================
-*/
 const deleteMessage = async (
   req,
   res
@@ -397,11 +421,9 @@ const deleteMessage = async (
       });
     }
 
-    /*
-    =====================================================
-    ONLY SENDER CAN DELETE
-    =====================================================
-    */
+    // -------------------------------------------------
+    // ONLY SENDER CAN DELETE
+    // -------------------------------------------------
 
     if (
       String(message.sender) !==
@@ -414,21 +436,17 @@ const deleteMessage = async (
       });
     }
 
-    /*
-    =====================================================
-    DELETE FROM DATABASE
-    =====================================================
-    */
+    // -------------------------------------------------
+    // DELETE
+    // -------------------------------------------------
 
     await Message.findByIdAndDelete(
       messageId
     );
 
-    /*
-    =====================================================
-    REAL-TIME DELETE
-    =====================================================
-    */
+    // -------------------------------------------------
+    // SOCKET DELETE
+    // -------------------------------------------------
 
     const io =
       req.app.get("io");
@@ -452,7 +470,6 @@ const deleteMessage = async (
       messageId:
         message._id,
     });
-
   } catch (error) {
     console.error(
       "DELETE MESSAGE ERROR:",
@@ -468,97 +485,229 @@ const deleteMessage = async (
 };
 
 // =====================================================
-// GET MESSAGE HISTORY / CONVERSATIONS
+// GET CONVERSATIONS
+// GET /api/messages/conversations
 // =====================================================
 
-const getConversations = async (req, res) => {
+const getConversations = async (
+  req,
+  res
+) => {
   try {
     const currentUserId =
-      req.user?.userId || req.user?._id;
+      req.user?.userId ||
+      req.user?._id;
 
     if (!currentUserId) {
       return res.status(401).json({
-        message: "User authentication required.",
+        success: false,
+        message:
+          "User authentication required.",
       });
     }
 
-    const claims = await Claim.find({
-      status: "ACCEPTED",
-      $or: [
-        { user: currentUserId },
-        {
-          ping: {
-            $in: await Ping.find({
-              user: currentUserId,
-            }).distinct("_id"),
+    // -------------------------------------------------
+    // CURRENT USER KE PINGS
+    // -------------------------------------------------
+
+    const myPingIds =
+      await Ping.find({
+        user: currentUserId,
+      }).distinct("_id");
+
+    // -------------------------------------------------
+    // ACCEPTED CLAIMS
+    // -------------------------------------------------
+
+    const claims =
+      await Claim.find({
+        status: "ACCEPTED",
+
+        $or: [
+          {
+            user: currentUserId,
           },
-        },
-      ],
-    })
-      .populate("user", "name email phone")
-      .populate(
-        "ping",
-        "title type description user"
-      )
-      .sort({ updatedAt: -1 });
+          {
+            ping: {
+              $in: myPingIds,
+            },
+          },
+        ],
+      })
+        .populate(
+          "user",
+          "_id name email phone"
+        )
+        .populate(
+          "ping",
+          "_id title type description user"
+        )
+        .sort({
+          updatedAt: -1,
+        });
 
     const conversations = [];
 
+    // -------------------------------------------------
+    // PROCESS CLAIMS
+    // -------------------------------------------------
+
     for (const claim of claims) {
-      if (!claim.ping) continue;
+      if (!claim.ping) {
+        continue;
+      }
 
-      const ownerId = claim.ping.user
-        ? String(claim.ping.user)
-        : null;
+      const ownerId =
+        claim.ping.user
+          ? String(
+              claim.ping.user
+            )
+          : null;
 
-      const finderId = claim.user
-        ? String(
-            claim.user._id || claim.user
-          )
-        : null;
+      const finderId =
+        claim.user
+          ? String(
+              claim.user._id ||
+                claim.user
+            )
+          : null;
 
-      if (!ownerId || !finderId) continue;
+      if (
+        !ownerId ||
+        !finderId
+      ) {
+        continue;
+      }
+
+      const currentId =
+        String(currentUserId);
+
+      // -------------------------------------------------
+      // OWNER / FINDER
+      // -------------------------------------------------
 
       const isOwner =
-        String(currentUserId) === ownerId;
+        currentId === ownerId;
 
-      const otherUserId = isOwner
-        ? finderId
-        : ownerId;
+      const isFinder =
+        currentId === finderId;
 
-      const otherUser = isOwner
-        ? claim.user
-        : await User.findById(otherUserId)
-            .select("name email phone");
+      if (
+        !isOwner &&
+        !isFinder
+      ) {
+        continue;
+      }
+
+      // -------------------------------------------------
+      // OTHER USER
+      // -------------------------------------------------
+
+      const otherUserId =
+        isOwner
+          ? finderId
+          : ownerId;
+
+      const otherUser =
+        await User.findById(
+          otherUserId
+        ).select(
+          "_id name email phone"
+        );
+
+      if (!otherUser) {
+        continue;
+      }
+
+      // -------------------------------------------------
+      // LAST MESSAGE
+      // -------------------------------------------------
 
       const lastMessage =
         await Message.findOne({
+          claimId:
+            claim._id,
+
           $or: [
             {
-              sender: currentUserId,
-              receiver: otherUserId,
+              sender:
+                currentUserId,
+
+              receiver:
+                otherUserId,
             },
             {
-              sender: otherUserId,
-              receiver: currentUserId,
+              sender:
+                otherUserId,
+
+              receiver:
+                currentUserId,
             },
           ],
-          claimId: claim._id,
         })
-          .sort({ createdAt: -1 })
+          .sort({
+            createdAt: -1,
+          })
           .select(
-            "message sender receiver createdAt seen"
+            "_id message sender receiver createdAt seen"
           );
 
+      // -------------------------------------------------
+      // ADD CONVERSATION
+      // -------------------------------------------------
+
       conversations.push({
-        claimId: claim._id,
-        pingId: claim.ping._id,
-        itemTitle: claim.ping.title,
-        claimStatus: claim.status,
+        claimId:
+          String(
+            claim._id
+          ),
+
+        pingId:
+          String(
+            claim.ping._id
+          ),
+
+        itemTitle:
+          claim.ping.title,
+
+        claimStatus:
+          claim.status,
+
         otherUser,
-        lastMessage,
+
+        lastMessage:
+          lastMessage ||
+          null,
       });
     }
+
+    // -------------------------------------------------
+    // SORT
+    // -------------------------------------------------
+
+    conversations.sort(
+      (a, b) => {
+        const dateA =
+          a.lastMessage?.createdAt
+            ? new Date(
+                a.lastMessage.createdAt
+              ).getTime()
+            : 0;
+
+        const dateB =
+          b.lastMessage?.createdAt
+            ? new Date(
+                b.lastMessage.createdAt
+              ).getTime()
+            : 0;
+
+        return dateB - dateA;
+      }
+    );
+
+    // -------------------------------------------------
+    // RESPONSE
+    // -------------------------------------------------
 
     return res.json({
       success: true,
@@ -566,19 +715,23 @@ const getConversations = async (req, res) => {
     });
   } catch (error) {
     console.error(
-      "Get conversations error:",
+      "GET CONVERSATIONS ERROR:",
       error
     );
 
     return res.status(500).json({
+      success: false,
       message:
         "Failed to fetch message history.",
+      details:
+        error.message,
     });
   }
 };
 
-
-
+// =====================================================
+// EXPORT
+// =====================================================
 
 module.exports = {
   getMessages,

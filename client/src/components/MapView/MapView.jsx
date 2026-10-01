@@ -1,59 +1,147 @@
 import React, { useContext, useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Circle,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import axios from "axios";
 import { io } from "socket.io-client";
+
 import { LocationContext } from "../../context/LocationContext";
 import "./MapView.css";
 
-const socket = io("https://nearping-app.onrender.com");
+// =====================================================
+// API CONFIG
+// =====================================================
+
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://nearping-app.onrender.com";
+
+const socket = io(API_URL, {
+  transports: ["websocket", "polling"],
+});
+
+// =====================================================
+// ALERT THEME
+// =====================================================
 
 const getAlertTheme = (type = "") => {
   const alertType = String(type).toUpperCase();
+
   if (alertType === "FOUND") {
-    return { color: "#10B981", fillColor: "#34D399", emoji: "🎁" };
-  } else if (alertType === "URGENT_HELP" || alertType.includes("HELP")) {
-    return { color: "#F59E0B", fillColor: "#FBBF24", emoji: "🚨" };
+    return {
+      color: "#10B981",
+      fillColor: "#34D399",
+      emoji: "🎁",
+    };
   }
-  return { color: "#EF4444", fillColor: "#F87171", emoji: "🔍" };
+
+  if (alertType === "URGENT_HELP" || alertType.includes("HELP")) {
+    return {
+      color: "#F59E0B",
+      fillColor: "#FBBF24",
+      emoji: "🚨",
+    };
+  }
+
+  return {
+    color: "#EF4444",
+    fillColor: "#F87171",
+    emoji: "🔍",
+  };
 };
+
+// =====================================================
+// CUSTOM ALERT MARKER
+// =====================================================
 
 const createCustomIcon = (type = "") => {
   const theme = getAlertTheme(type);
+
   return L.divIcon({
     className: "custom-leaflet-marker",
     html: `
-      <div class="marker-pin" style="background-color: ${theme.color}; box-shadow: 0 0 12px ${theme.color};">
+      <div
+        class="marker-pin"
+        style="
+          background-color: ${theme.color};
+          box-shadow: 0 0 12px ${theme.color};
+        "
+      >
         <span>${theme.emoji}</span>
       </div>
     `,
     iconSize: [38, 38],
     iconAnchor: [19, 19],
+    popupAnchor: [0, -19],
   });
 };
 
+// =====================================================
+// USER LOCATION ICON
+// =====================================================
+
 const userIcon = L.divIcon({
   className: "user-leaflet-marker",
-  html: `<div class="user-pulse-dot"></div>`,
+  html: `
+    <div class="user-pulse-dot"></div>
+  `,
   iconSize: [20, 20],
   iconAnchor: [10, 10],
 });
 
+// =====================================================
+// TEMP SELECTED LOCATION ICON
+// =====================================================
+
 const tempSelectedIcon = L.divIcon({
   className: "selected-leaflet-marker",
-  html: `<div style="font-size: 26px; filter: drop-shadow(0 0 6px #ef4444);">📍</div>`,
+  html: `
+    <div
+      style="
+        font-size: 26px;
+        filter: drop-shadow(0 0 6px #ef4444);
+      "
+    >
+      📍
+    </div>
+  `,
   iconSize: [30, 30],
   iconAnchor: [15, 30],
 });
 
+// =====================================================
+// MAP RECENTER
+// =====================================================
+
 const MapRecenter = ({ coords }) => {
   const map = useMap();
+
   useEffect(() => {
-    if (coords) map.setView([coords.lat, coords.lng], 13);
+    if (!coords) return;
+
+    const lat = Number(coords.lat);
+    const lng = Number(coords.lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return;
+    }
+
+    map.setView([lat, lng], 13);
   }, [coords, map]);
+
   return null;
 };
+
+// =====================================================
+// MAP CLICK
+// =====================================================
 
 const MapClickHandler = ({ onMapClick }) => {
   useMapEvents({
@@ -61,53 +149,159 @@ const MapClickHandler = ({ onMapClick }) => {
       onMapClick(e.latlng);
     },
   });
+
   return null;
 };
 
-const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
+// =====================================================
+// MAIN MAP
+// =====================================================
+
+const MapView = ({
+  selectedLocation,
+  setSelectedLocation,
+  setIsModalOpen,
+}) => {
   const { coords } = useContext(LocationContext);
+
   const [pings, setPings] = useState([]);
+  const [mapError, setMapError] = useState("");
+
+  // ===================================================
+  // FETCH NEARBY PINGS
+  // ===================================================
 
   useEffect(() => {
     if (!coords) return;
+
+    const latitude = Number(coords.lat);
+    const longitude = Number(coords.lng);
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      console.error("Invalid user coordinates:", coords);
+      return;
+    }
+
     const fetchPings = async () => {
       try {
-        const res = await axios.get(
-          `https://nearping-app.onrender.com/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=50000`
+        setMapError("");
+
+        console.log("📍 User Location:", {
+          latitude,
+          longitude,
+        });
+
+        const response = await axios.get(
+          `${API_URL}/api/pings/near`,
+          {
+            params: {
+              latitude,
+              longitude,
+
+              // 50 KM
+              radius: 50,
+            },
+          }
         );
-        setPings(res.data.filter(ping => ping.status !== "RESOLVED"));
-      } catch (err) {
-        console.error("Map fetch error:", err);
+
+        console.log("🗺️ Nearby Pings:", response.data);
+
+        const receivedPings = Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        const activePings = receivedPings.filter(
+          (ping) => ping.status !== "RESOLVED"
+        );
+
+        setPings(activePings);
+      } catch (error) {
+        console.error(
+          "❌ Map fetch error:",
+          error.response?.data || error.message
+        );
+
+        setMapError("Alerts load nahi ho pa rahe hain.");
       }
     };
+
     fetchPings();
   }, [coords]);
 
-  // Real-time socket synchronization for markers
+  // ===================================================
+  // SOCKET REAL-TIME PINGS
+  // ===================================================
+
   useEffect(() => {
-    socket.on("new-ping", (newPing) => {
-      setPings((prev) => [newPing, ...prev]);
-    });
+    const handleNewPing = (newPing) => {
+      console.log("🔔 New Ping Received:", newPing);
 
-    socket.on("ping-resolved", ({ pingId }) => {
-      setPings((prev) => prev.filter((p) => p._id !== pingId));
-    });
+      if (!newPing?._id) return;
 
-    socket.on("ping-deleted", ({ pingId }) => {
-      setPings((prev) => prev.filter((p) => p._id !== pingId));
-    });
+      if (newPing.status === "RESOLVED") return;
+
+      setPings((previousPings) => {
+        const alreadyExists = previousPings.some(
+          (ping) => ping._id === newPing._id
+        );
+
+        if (alreadyExists) {
+          return previousPings;
+        }
+
+        return [newPing, ...previousPings];
+      });
+    };
+
+    const handlePingResolved = ({ pingId }) => {
+      console.log("✅ Ping Resolved:", pingId);
+
+      setPings((previousPings) =>
+        previousPings.filter(
+          (ping) => ping._id !== pingId
+        )
+      );
+    };
+
+    const handlePingDeleted = ({ pingId }) => {
+      console.log("🗑️ Ping Deleted:", pingId);
+
+      setPings((previousPings) =>
+        previousPings.filter(
+          (ping) => ping._id !== pingId
+        )
+      );
+    };
+
+    socket.on("new-ping", handleNewPing);
+    socket.on("ping-resolved", handlePingResolved);
+    socket.on("ping-deleted", handlePingDeleted);
 
     return () => {
-      socket.off("new-ping");
-      socket.off("ping-resolved");
-      socket.off("ping-deleted");
+      socket.off("new-ping", handleNewPing);
+      socket.off("ping-resolved", handlePingResolved);
+      socket.off("ping-deleted", handlePingDeleted);
     };
   }, []);
 
+  // ===================================================
+  // MAP CLICK
+  // ===================================================
+
   const handleMapClick = (latlng) => {
     setSelectedLocation(latlng);
-    if (setIsModalOpen) setIsModalOpen(true);
+
+    if (setIsModalOpen) {
+      setIsModalOpen(true);
+    }
   };
+
+  // ===================================================
+  // GPS LOADING
+  // ===================================================
 
   if (!coords) {
     return (
@@ -117,37 +311,175 @@ const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
     );
   }
 
+  const userLat = Number(coords.lat);
+  const userLng = Number(coords.lng);
+
+  if (
+    !Number.isFinite(userLat) ||
+    !Number.isFinite(userLng)
+  ) {
+    return (
+      <div className="map-loading-box">
+        <p>❌ Location coordinates invalid hain.</p>
+      </div>
+    );
+  }
+
+  // ===================================================
+  // UI
+  // ===================================================
+
   return (
     <div className="map-container-wrapper">
-      <MapContainer center={[coords.lat, coords.lng]} zoom={13} style={{ height: "100%", width: "100%" }}>
+
+      {mapError && (
+        <div
+          style={{
+            position: "absolute",
+            zIndex: 1000,
+            top: "10px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#7f1d1d",
+            color: "#fff",
+            padding: "8px 14px",
+            borderRadius: "8px",
+            fontSize: "13px",
+          }}
+        >
+          {mapError}
+        </div>
+      )}
+
+      <MapContainer
+        center={[userLat, userLng]}
+        zoom={13}
+        style={{
+          height: "100%",
+          width: "100%",
+        }}
+      >
+
+        {/* =============================================
+            OPEN STREET MAP
+        ============================================= */}
+
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
-        <MapRecenter coords={coords} />
-        
-        <MapClickHandler onMapClick={handleMapClick} />
 
-        <Marker position={[coords.lat, coords.lng]} icon={userIcon}>
-          <Popup>📍 Aap Yahan Hain</Popup>
+        {/* =============================================
+            RECENTER USER
+        ============================================= */}
+
+        <MapRecenter coords={coords} />
+
+        {/* =============================================
+            MAP CLICK
+        ============================================= */}
+
+        <MapClickHandler
+          onMapClick={handleMapClick}
+        />
+
+        {/* =============================================
+            USER LOCATION
+        ============================================= */}
+
+        <Marker
+          position={[userLat, userLng]}
+          icon={userIcon}
+        >
+          <Popup>
+            📍 <strong>Aap yahan hain</strong>
+          </Popup>
         </Marker>
 
-        {selectedLocation && (
-          <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={tempSelectedIcon}>
-            <Popup>🎯 New Alert Location</Popup>
-          </Marker>
-        )}
+        {/* =============================================
+            SELECTED NEW ALERT LOCATION
+        ============================================= */}
+
+        {selectedLocation &&
+          Number.isFinite(
+            Number(selectedLocation.lat)
+          ) &&
+          Number.isFinite(
+            Number(selectedLocation.lng)
+          ) && (
+            <Marker
+              position={[
+                Number(selectedLocation.lat),
+                Number(selectedLocation.lng),
+              ]}
+              icon={tempSelectedIcon}
+            >
+              <Popup>
+                🎯 New Alert Location
+              </Popup>
+            </Marker>
+          )}
+
+        {/* =============================================
+            ALL PINGS
+        ============================================= */}
 
         {pings.map((ping) => {
-          const lat = ping.location?.coordinates?.[1];
-          const lng = ping.location?.coordinates?.[0];
-          if (!lat || !lng) return null;
+          const coordinates =
+            ping?.location?.coordinates;
 
-          const theme = getAlertTheme(ping.type);
-          const radiusInMeters = (ping.broadcastRadius || 5) * 1000;
+          if (
+            !Array.isArray(coordinates) ||
+            coordinates.length < 2
+          ) {
+            console.warn(
+              "⚠️ Ping has invalid location:",
+              ping
+            );
+
+            return null;
+          }
+
+          // GeoJSON:
+          // coordinates[0] = longitude
+          // coordinates[1] = latitude
+
+          const lng = Number(coordinates[0]);
+          const lat = Number(coordinates[1]);
+
+          if (
+            !Number.isFinite(lat) ||
+            !Number.isFinite(lng)
+          ) {
+            return null;
+          }
+
+          if (
+            lat < -90 ||
+            lat > 90 ||
+            lng < -180 ||
+            lng > 180
+          ) {
+            return null;
+          }
+
+          const theme = getAlertTheme(
+            ping.type
+          );
+
+          const broadcastRadiusKm =
+            Number(ping.broadcastRadius) || 5;
+
+          const radiusInMeters =
+            broadcastRadiusKm * 1000;
 
           return (
-            <React.Fragment key={ping._id || Math.random()}>
+            <React.Fragment key={ping._id}>
+
+              {/* =======================================
+                  COVERAGE CIRCLE
+              ======================================= */}
+
               <Circle
                 center={[lat, lng]}
                 radius={radiusInMeters}
@@ -160,20 +492,58 @@ const MapView = ({ selectedLocation, setSelectedLocation, setIsModalOpen }) => {
                 }}
               />
 
-              <Marker position={[lat, lng]} icon={createCustomIcon(ping.type)}>
+              {/* =======================================
+                  PING MARKER
+              ======================================= */}
+
+              <Marker
+                position={[lat, lng]}
+                icon={createCustomIcon(ping.type)}
+              >
                 <Popup>
                   <div className="popup-content">
-                    <strong>{ping.title}</strong>
-                    <p>{ping.description}</p>
-                    <div style={{ marginTop: "6px", fontSize: "11px", fontWeight: "bold", color: theme.color }}>
-                      📡 Coverage: {ping.broadcastRadius || 5} KM
+
+                    <strong>
+                      {ping.title || "NearPing Alert"}
+                    </strong>
+
+                    {ping.description && (
+                      <p>
+                        {ping.description}
+                      </p>
+                    )}
+
+                    <div
+                      style={{
+                        marginTop: "6px",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: theme.color,
+                      }}
+                    >
+                      📡 Coverage:{" "}
+                      {broadcastRadiusKm} KM
                     </div>
+
+                    <div
+                      style={{
+                        marginTop: "4px",
+                        fontSize: "10px",
+                        color: "#666",
+                      }}
+                    >
+                      📍 {lat.toFixed(5)},{" "}
+                      {lng.toFixed(5)}
+                    </div>
+
                   </div>
                 </Popup>
               </Marker>
+
             </React.Fragment>
           );
         })}
+
       </MapContainer>
     </div>
   );
