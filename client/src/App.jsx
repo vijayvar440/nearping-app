@@ -24,10 +24,20 @@ import { io } from "socket.io-client";
 import "./App.css";
 
 // =====================================================
+// API URL
+// =====================================================
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://nearping-app.onrender.com";
+
+// =====================================================
 // SOCKET
 // =====================================================
 
-const socket = io("https://nearping-app.onrender.com");
+const socket = io(API_URL, {
+  transports: ["websocket", "polling"],
+});
 
 // =====================================================
 // NOTIFICATION SOUND
@@ -50,26 +60,48 @@ const playAlertSound = (isEmergency = false) => {
 // =====================================================
 
 function App() {
-  const { coords } = useContext(LocationContext);
-  const { user } = useContext(AuthContext);
+  // ===================================================
+  // AUTH + LOCATION
+  // ===================================================
+
+  const {
+    coords,
+    startLocationTracking,
+    stopLocationTracking,
+  } = useContext(LocationContext);
+
+  const {
+    user,
+    loading: authLoading,
+  } = useContext(AuthContext);
 
   // ===================================================
   // STATES
   // ===================================================
 
   const [pings, setPings] = useState([]);
-  const [resolvedPings, setResolvedPings] = useState([]);
+
+  const [resolvedPings, setResolvedPings] =
+    useState([]);
 
   const [radius, setRadius] = useState(5);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] =
+    useState(false);
 
-  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] =
+    useState(false);
 
-  const [selectedPingForClaim, setSelectedPingForClaim] =
-    useState(null);
+  const [isProfileOpen, setIsProfileOpen] =
+    useState(false);
+
+  const [isMessagesOpen, setIsMessagesOpen] =
+    useState(false);
+
+  const [
+    selectedPingForClaim,
+    setSelectedPingForClaim,
+  ] = useState(null);
 
   const [
     selectedPingForViewClaims,
@@ -104,7 +136,8 @@ function App() {
         return savedUserData;
       }
 
-      const parsed = JSON.parse(savedUserData);
+      const parsed =
+        JSON.parse(savedUserData);
 
       return (
         parsed?._id ||
@@ -129,6 +162,97 @@ function App() {
   };
 
   // ===================================================
+  // 🔐 AUTH → GPS CONTROL
+  // ===================================================
+
+  useEffect(() => {
+    // AuthContext abhi check kar raha hai
+    if (authLoading) {
+      return;
+    }
+
+    // ===============================================
+    // ❌ NOT LOGGED IN
+    // ===============================================
+
+    if (!user) {
+      console.log(
+        "🔒 User not logged in → GPS OFF"
+      );
+
+      // GPS stop
+      stopLocationTracking();
+
+      // Nearby data clear
+      setPings([]);
+      setResolvedPings([]);
+
+      // Create Alert close
+      setIsModalOpen(false);
+
+      // Profile close
+      setIsProfileOpen(false);
+
+      // Messages close
+      setIsMessagesOpen(false);
+
+      // Login/Register popup
+      setIsAuthModalOpen(true);
+
+      return;
+    }
+
+    // ===============================================
+    // ✅ LOGGED IN
+    // ===============================================
+
+    console.log(
+      "🔓 User logged in → Starting GPS"
+    );
+
+    // Login ke baad GPS start
+    startLocationTracking();
+
+    // Login ke baad Auth popup close
+    setIsAuthModalOpen(false);
+  }, [
+    user,
+    authLoading,
+    startLocationTracking,
+    stopLocationTracking,
+  ]);
+
+  // ===================================================
+  // 🔔 NOTIFICATION PERMISSION
+  // Only logged-in users
+  // ===================================================
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    if (
+      "Notification" in window &&
+      Notification.permission === "default"
+    ) {
+      Notification.requestPermission()
+        .then((permission) => {
+          console.log(
+            "🔔 Notification permission:",
+            permission
+          );
+        })
+        .catch((error) => {
+          console.warn(
+            "⚠️ Notification permission error:",
+            error
+          );
+        });
+    }
+  }, [user]);
+
+  // ===================================================
   // JOIN USER SOCKET ROOM
   // ===================================================
 
@@ -136,6 +260,11 @@ function App() {
     let interval = null;
 
     const joinUserRoom = () => {
+      // ❌ No user → no private room
+      if (!user) {
+        return;
+      }
+
       const userId =
         user?._id ||
         user?.id ||
@@ -163,10 +292,12 @@ function App() {
 
     joinUserRoom();
 
-    interval = setInterval(
-      joinUserRoom,
-      1000
-    );
+    if (user) {
+      interval = setInterval(
+        joinUserRoom,
+        1000
+      );
+    }
 
     return () => {
       if (interval) {
@@ -179,7 +310,9 @@ function App() {
   // DELETE PING FROM UI
   // ===================================================
 
-  const handleDeletePing = (deletedPingId) => {
+  const handleDeletePing = (
+    deletedPingId
+  ) => {
     setPings((prevPings) =>
       prevPings.filter(
         (ping) =>
@@ -188,42 +321,52 @@ function App() {
       )
     );
 
-    setResolvedPings((prevResolved) =>
-      prevResolved.filter(
-        (ping) =>
-          String(ping._id) !==
-          String(deletedPingId)
-      )
+    setResolvedPings(
+      (prevResolved) =>
+        prevResolved.filter(
+          (ping) =>
+            String(ping._id) !==
+            String(deletedPingId)
+        )
     );
   };
 
   // ===================================================
-  // NOTIFICATION PERMISSION
-  // ===================================================
-
-  useEffect(() => {
-    if (
-      "Notification" in window &&
-      Notification.permission !== "granted"
-    ) {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  // ===================================================
   // FETCH NEARBY PINGS
+  // ONLY LOGGED-IN + GPS
   // ===================================================
 
   useEffect(() => {
+    // ❌ Not logged in
+    if (!user) {
+      setPings([]);
+      setResolvedPings([]);
+      return;
+    }
+
+    // ❌ GPS not available
     if (!coords) {
       return;
     }
 
     const fetchPings = async () => {
       try {
-        const response = await axios.get(
-          `https://nearping-app.onrender.com/api/pings/near?latitude=${coords.lat}&longitude=${coords.lng}&radius=${radius}`
+        console.log(
+          "📍 Fetching nearby pings:",
+          coords
         );
+
+        const response =
+          await axios.get(
+            `${API_URL}/api/pings/near`,
+            {
+              params: {
+                latitude: coords.lat,
+                longitude: coords.lng,
+                radius: radius,
+              },
+            }
+          );
 
         const allPings =
           Array.isArray(response.data)
@@ -231,6 +374,10 @@ function App() {
             : [];
 
         const now = Date.now();
+
+        // ==========================================
+        // ACTIVE PINGS
+        // ==========================================
 
         const activePings =
           allPings.filter((ping) => {
@@ -249,6 +396,10 @@ function App() {
             );
           });
 
+        // ==========================================
+        // RESOLVED / HISTORY
+        // ==========================================
+
         const historyPings =
           allPings.filter(
             (ping) =>
@@ -257,16 +408,17 @@ function App() {
 
         setPings(activePings);
         setResolvedPings(historyPings);
+
       } catch (error) {
         console.error(
-          "App fetch error:",
+          "❌ App fetch error:",
           error
         );
       }
     };
 
     fetchPings();
-  }, [coords, radius]);
+  }, [user, coords, radius]);
 
   // ===================================================
   // REMOVE EXPIRED PINGS
@@ -307,11 +459,16 @@ function App() {
   // ===================================================
 
   useEffect(() => {
-    // -------------------------------------------------
+    // ===============================================
     // NEW PING
-    // -------------------------------------------------
+    // ===============================================
 
     const handleNewPing = (newPing) => {
+      // ❌ Logged-out user ko notification nahi
+      if (!user) {
+        return;
+      }
+
       if (
         newPing.expiresAt &&
         new Date(
@@ -343,11 +500,16 @@ function App() {
         newPing.alertType ===
         "EMERGENCY";
 
-      playAlertSound(isEmergency);
+      // 🔊 Sound
+      playAlertSound(
+        isEmergency
+      );
 
+      // 🔔 Browser notification
       if (
         "Notification" in window &&
-        Notification.permission === "granted"
+        Notification.permission ===
+          "granted"
       ) {
         new Notification(
           isEmergency
@@ -364,13 +526,17 @@ function App() {
       }
     };
 
-    // -------------------------------------------------
+    // ===============================================
     // PING RESOLVED
-    // -------------------------------------------------
+    // ===============================================
 
     const handlePingResolved = ({
       pingId,
     }) => {
+      if (!user) {
+        return;
+      }
+
       setPings((prevPings) => {
         const foundPing =
           prevPings.find(
@@ -399,13 +565,17 @@ function App() {
       });
     };
 
-    // -------------------------------------------------
+    // ===============================================
     // PING DELETED
-    // -------------------------------------------------
+    // ===============================================
 
     const handlePingDeleted = ({
       pingId,
     }) => {
+      if (!user) {
+        return;
+      }
+
       setPings((prevPings) =>
         prevPings.filter(
           (ping) =>
@@ -424,13 +594,17 @@ function App() {
       );
     };
 
-    // -------------------------------------------------
+    // ===============================================
     // NEW CLAIM
-    // -------------------------------------------------
+    // ===============================================
 
     const handleNewClaim = (
       claimData
     ) => {
+      if (!user) {
+        return;
+      }
+
       const currentUserId =
         user?._id ||
         user?.id ||
@@ -463,18 +637,23 @@ function App() {
           Boolean(
             currentUserId &&
               ownerId &&
-              String(currentUserId).trim() ===
-                String(ownerId).trim()
+              String(
+                currentUserId
+              ).trim() ===
+                String(
+                  ownerId
+                ).trim()
           );
 
         let myCreated = [];
 
         try {
-          myCreated = JSON.parse(
-            localStorage.getItem(
-              "myCreatedPings"
-            ) || "[]"
-          );
+          myCreated =
+            JSON.parse(
+              localStorage.getItem(
+                "myCreatedPings"
+              ) || "[]"
+            );
         } catch {
           myCreated = [];
         }
@@ -497,9 +676,9 @@ function App() {
       });
     };
 
-    // -------------------------------------------------
+    // ===============================================
     // OWNER-SPECIFIC NEW CLAIM
-    // -------------------------------------------------
+    // ===============================================
 
     const currentUserId =
       user?._id ||
@@ -509,6 +688,10 @@ function App() {
     const handleOwnerNewClaim = (
       claimData
     ) => {
+      if (!user) {
+        return;
+      }
+
       if (!claimData) {
         return;
       }
@@ -518,8 +701,10 @@ function App() {
         claimData
       );
 
+      // 🔊 Sound
       playAlertSound(false);
 
+      // 🔔 Notification
       if (
         "Notification" in window &&
         Notification.permission ===
@@ -536,6 +721,7 @@ function App() {
         );
       }
 
+      // Alert
       alert(
         `🔔 ${
           claimData.message ||
@@ -544,9 +730,9 @@ function App() {
       );
     };
 
-    // -------------------------------------------------
+    // ===============================================
     // REGISTER SOCKET EVENTS
-    // -------------------------------------------------
+    // ===============================================
 
     socket.on(
       "new-ping",
@@ -568,7 +754,7 @@ function App() {
       handleNewClaim
     );
 
-    if (currentUserId) {
+    if (currentUserId && user) {
       console.log(
         "🔔 Listening for owner claims:",
         `new-claim-owner-${currentUserId}`
@@ -580,9 +766,9 @@ function App() {
       );
     }
 
-    // -------------------------------------------------
+    // ===============================================
     // CLEANUP
-    // -------------------------------------------------
+    // ===============================================
 
     return () => {
       socket.off(
@@ -624,6 +810,21 @@ function App() {
   };
 
   // ===================================================
+  // OPEN ALERT
+  // ===================================================
+
+  const handleOpenAlert = () => {
+    // ❌ Login required
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    // ✅ Logged-in user
+    setIsModalOpen(true);
+  };
+
+  // ===================================================
   // OPEN MESSAGES
   // ===================================================
 
@@ -645,73 +846,133 @@ function App() {
   };
 
   // ===================================================
+  // OPEN PROFILE
+  // ===================================================
+
+  const handleOpenProfile = () => {
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setIsProfileOpen(true);
+  };
+
+  // ===================================================
+  // AUTH MODAL CLOSE
+  // ===================================================
+
+  const handleAuthModalClose = () => {
+    setIsAuthModalOpen(false);
+  };
+
+  // ===================================================
   // RETURN
   // ===================================================
 
   return (
     <div className="app-root">
 
-      {/* RADAR ALERT */}
-      <RadarAlertToast />
+      {/* ============================================
+          RADAR ALERT
+          Only logged-in users
+      ============================================ */}
 
-      {/* HEADER */}
+      {user && <RadarAlertToast />}
+
+      {/* ============================================
+          HEADER
+      ============================================ */}
+
       <Header
-        onOpenModal={() => {
-          setIsModalOpen(true);
-        }}
+        onOpenModal={
+          handleOpenAlert
+        }
 
         onOpenAuthModal={() => {
           setIsAuthModalOpen(true);
         }}
 
-        onOpenProfile={() => {
-          setIsProfileOpen(true);
-        }}
+        onOpenProfile={
+          handleOpenProfile
+        }
 
         onOpenMessages={
           handleOpenMessages
         }
       />
 
-      {/* MAIN */}
+      {/* ============================================
+          MAIN
+      ============================================ */}
+
       <main className="main-layout">
 
-        {/* MAP */}
+        {/* ==========================================
+            MAP
+        ========================================== */}
+
         <div className="map-section">
           <MapView
             selectedLocation={
               selectedLocation
             }
+
             setSelectedLocation={
               setSelectedLocation
             }
+
             setIsModalOpen={
               setIsModalOpen
             }
           />
         </div>
 
-        {/* PING FEED */}
+        {/* ==========================================
+            PING FEED
+        ========================================== */}
+
         <div className="feed-section">
           <PingFeed
             pings={pings}
+
             resolvedPings={
               resolvedPings
             }
-            radius={radius}
-            setRadius={setRadius}
 
-            onClaimClick={(ping) =>
+            radius={radius}
+
+            setRadius={
+              setRadius
+            }
+
+            onClaimClick={(ping) => {
+              // Login required
+              if (!user) {
+                setIsAuthModalOpen(
+                  true
+                );
+                return;
+              }
+
               setSelectedPingForClaim(
                 ping
-              )
-            }
+              );
+            }}
 
-            onViewClaimsClick={(ping) =>
+            onViewClaimsClick={(ping) => {
+              // Login required
+              if (!user) {
+                setIsAuthModalOpen(
+                  true
+                );
+                return;
+              }
+
               setSelectedPingForViewClaims(
                 ping
-              )
-            }
+              );
+            }}
 
             onDeletePing={
               handleDeletePing
@@ -721,75 +982,112 @@ function App() {
 
       </main>
 
-      {/* CREATE PING MODAL */}
+      {/* ==========================================
+          CREATE PING MODAL
+      ========================================== */}
+
       <CreatePingModal
-        isOpen={isModalOpen}
+        isOpen={
+          isModalOpen &&
+          Boolean(user)
+        }
+
         onClose={
           handleCloseModal
         }
+
         selectedLocation={
           selectedLocation
         }
       />
 
-      {/* AUTH MODAL */}
+      {/* ==========================================
+          AUTH MODAL
+      ========================================== */}
+
       <AuthModal
         isOpen={
           isAuthModalOpen
         }
-        onClose={() =>
-          setIsAuthModalOpen(false)
+
+        onClose={
+          handleAuthModalClose
         }
       />
 
-      {/* PROFILE */}
-      <Profile
-        isOpen={isProfileOpen}
-        onClose={() =>
-          setIsProfileOpen(false)
-        }
-      />
+      {/* ==========================================
+          PROFILE
+      ========================================== */}
 
-      {/* CLAIM MODAL */}
-      {selectedPingForClaim && (
-        <ClaimModal
-          ping={
-            selectedPingForClaim
+      {user && (
+        <Profile
+          isOpen={
+            isProfileOpen
           }
+
           onClose={() =>
-            setSelectedPingForClaim(
-              null
+            setIsProfileOpen(
+              false
             )
           }
         />
       )}
 
-      {/* CLAIMS LIST */}
-      {selectedPingForViewClaims && (
-        <ClaimsListModal
-          ping={
-            selectedPingForViewClaims
-          }
-          onClose={() =>
-            setSelectedPingForViewClaims(
-              null
-            )
-          }
-          onClaimAccepted={() => {
-            // Claim accept ke baad
-            // modal open rahega
-          }}
-        />
-      )}
+      {/* ==========================================
+          CLAIM MODAL
+      ========================================== */}
 
-      {/* MESSAGES */}
-      {isMessagesOpen && (
-        <MessagesModal
-          onClose={
-            handleCloseMessages
-          }
-        />
-      )}
+      {selectedPingForClaim &&
+        user && (
+          <ClaimModal
+            ping={
+              selectedPingForClaim
+            }
+
+            onClose={() =>
+              setSelectedPingForClaim(
+                null
+              )
+            }
+          />
+        )}
+
+      {/* ==========================================
+          CLAIMS LIST
+      ========================================== */}
+
+      {selectedPingForViewClaims &&
+        user && (
+          <ClaimsListModal
+            ping={
+              selectedPingForViewClaims
+            }
+
+            onClose={() =>
+              setSelectedPingForViewClaims(
+                null
+              )
+            }
+
+            onClaimAccepted={() => {
+              // Claim accept ke baad
+              // modal open rahega
+            }}
+          />
+        )}
+
+      {/* ==========================================
+          MESSAGES
+      ========================================== */}
+
+      {isMessagesOpen &&
+        user && (
+          <MessagesModal
+            onClose={
+              handleCloseMessages
+            }
+          />
+        )}
 
     </div>
   );

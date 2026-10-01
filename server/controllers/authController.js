@@ -5,33 +5,27 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET =
   process.env.JWT_SECRET || "nearping_secret_key_2026";
 
-// 📍 Helper: Safely parse GeoJSON point [lng, lat]
-const parseLocation = (
-  lat,
-  lng,
-  latitude,
-  longitude
-) => {
-  const userLat = lat ?? latitude;
-  const userLng = lng ?? longitude;
+// ==========================================
+// HELPERS
+// ==========================================
 
-  if (
-    userLat !== undefined &&
-    userLng !== undefined &&
-    !isNaN(userLat) &&
-    !isNaN(userLng)
-  ) {
-    return {
-      type: "Point",
-      coordinates: [
-        parseFloat(userLng),
-        parseFloat(userLat)
-      ]
-    };
-  }
-
-  return null;
+const createToken = (userId) => {
+  return jwt.sign(
+    {
+      userId: userId,
+    },
+    JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );
 };
+
+const emailRegex =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const phoneRegex =
+  /^[0-9]{10}$/;
 
 
 // ==========================================
@@ -45,56 +39,160 @@ exports.registerUser = async (req, res) => {
       email,
       password,
       phone,
-      lat,
-      lng,
-      latitude,
-      longitude
     } = req.body;
 
-    let user = await User.findOne({ email });
+    // ------------------------------
+    // Basic validation
+    // ------------------------------
 
-    if (user) {
+    if (!name || !email || !password || !phone) {
       return res.status(400).json({
-        message: "Email is already registered."
+        success: false,
+        message:
+          "Name, email, password and phone are required.",
       });
     }
 
-    const salt = await bcrypt.genSalt(10);
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
+
+    // ------------------------------
+    // Name validation
+    // ------------------------------
+
+    if (cleanName.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Name must contain at least 2 characters.",
+      });
+    }
+
+    if (cleanName.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Name cannot exceed 50 characters.",
+      });
+    }
+
+    // ------------------------------
+    // Email validation
+    // ------------------------------
+
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please enter a valid email address.",
+      });
+    }
+
+    // ------------------------------
+    // Phone validation
+    // ------------------------------
+
+    if (!phoneRegex.test(cleanPhone)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Phone number must contain exactly 10 digits.",
+      });
+    }
+
+    // ------------------------------
+    // Password validation
+    // ------------------------------
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Password must be at least 6 characters.",
+      });
+    }
+
+    // ------------------------------
+    // Check duplicate email
+    // ------------------------------
+
+    const existingEmail =
+      await User.findOne({
+        email: cleanEmail,
+      });
+
+    if (existingEmail) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Email is already registered.",
+      });
+    }
+
+    // ------------------------------
+    // Check duplicate phone
+    // ------------------------------
+
+    const existingPhone =
+      await User.findOne({
+        phone: cleanPhone,
+      });
+
+    if (existingPhone) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Phone number is already registered.",
+      });
+    }
+
+    // ------------------------------
+    // Hash password
+    // ------------------------------
 
     const hashedPassword =
-      await bcrypt.hash(password, salt);
+      await bcrypt.hash(password, 10);
 
-    const locationData = parseLocation(
-      lat,
-      lng,
-      latitude,
-      longitude
-    );
+    // ------------------------------
+    // Create user
+    // IMPORTANT:
+    // No GPS/location during register
+    // ------------------------------
 
-    user = new User({
-      name,
-      email,
+    const user = new User({
+      name: cleanName,
+      email: cleanEmail,
       password: hashedPassword,
-      phone,
+      phone: cleanPhone,
 
-      ...(locationData && {
-        lastKnownLocation: locationData
-      })
+      isEmailVerified: false,
+      isPhoneVerified: false,
+      isActive: true,
+
+      // Location remains default
+      // until user grants GPS permission.
     });
 
     await user.save();
 
-    const token = jwt.sign(
-      {
-        userId: user._id
-      },
-      JWT_SECRET,
-      {
-        expiresIn: "7d"
-      }
-    );
+    // ------------------------------
+    // Create JWT
+    // ------------------------------
 
-    res.status(201).json({
+    const token =
+      createToken(user._id);
+
+    // ------------------------------
+    // Response
+    // ------------------------------
+
+    return res.status(201).json({
+      success: true,
+
+      message:
+        "Account created successfully.",
+
       token,
 
       user: {
@@ -102,20 +200,40 @@ exports.registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+
+        isEmailVerified:
+          user.isEmailVerified,
+
+        isPhoneVerified:
+          user.isPhoneVerified,
+
+        isActive:
+          user.isActive,
+
         lastKnownLocation:
-          user.lastKnownLocation
-      }
+          user.lastKnownLocation,
+      },
     });
 
   } catch (err) {
     console.error(
-      "Register Error:",
+      "❌ Register Error:",
       err
     );
 
-    res.status(500).json({
-      message: "Server error occurred.",
-      error: err.message
+    // Duplicate key protection
+    if (err.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Email or phone number is already registered.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Server error occurred.",
     });
   }
 };
@@ -130,22 +248,55 @@ exports.loginUser = async (req, res) => {
     const {
       email,
       password,
-      lat,
-      lng,
-      latitude,
-      longitude
     } = req.body;
 
-    const user = await User.findOne({
-      email
-    });
+    // ------------------------------
+    // Validation
+    // ------------------------------
 
-    if (!user) {
+    if (!email || !password) {
       return res.status(400).json({
+        success: false,
         message:
-          "Invalid email or password."
+          "Email and password are required.",
       });
     }
+
+    const cleanEmail =
+      email.trim().toLowerCase();
+
+    // ------------------------------
+    // Find user
+    // ------------------------------
+
+    const user =
+      await User.findOne({
+        email: cleanEmail,
+      });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Invalid email or password.",
+      });
+    }
+
+    // ------------------------------
+    // Account status
+    // ------------------------------
+
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Your account is currently disabled.",
+      });
+    }
+
+    // ------------------------------
+    // Password check
+    // ------------------------------
 
     const isMatch =
       await bcrypt.compare(
@@ -154,38 +305,34 @@ exports.loginUser = async (req, res) => {
       );
 
     if (!isMatch) {
-      return res.status(400).json({
+      return res.status(401).json({
+        success: false,
         message:
-          "Invalid email or password."
+          "Invalid email or password.",
       });
     }
 
-    // 📍 Update location during login
-    const locationData = parseLocation(
-      lat,
-      lng,
-      latitude,
-      longitude
-    );
+    // ------------------------------
+    // Create JWT
+    // ------------------------------
 
-    if (locationData) {
-      user.lastKnownLocation =
-        locationData;
+    const token =
+      createToken(user._id);
 
-      await user.save();
-    }
+    // ------------------------------
+    // IMPORTANT:
+    // No GPS is read during login.
+    //
+    // GPS will be requested separately
+    // AFTER successful authentication.
+    // ------------------------------
 
-    const token = jwt.sign(
-      {
-        userId: user._id
-      },
-      JWT_SECRET,
-      {
-        expiresIn: "7d"
-      }
-    );
+    return res.json({
+      success: true,
 
-    res.json({
+      message:
+        "Login successful.",
+
       token,
 
       user: {
@@ -193,20 +340,31 @@ exports.loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+
+        isEmailVerified:
+          user.isEmailVerified,
+
+        isPhoneVerified:
+          user.isPhoneVerified,
+
+        isActive:
+          user.isActive,
+
         lastKnownLocation:
-          user.lastKnownLocation
-      }
+          user.lastKnownLocation,
+      },
     });
 
   } catch (err) {
     console.error(
-      "Login Error:",
+      "❌ Login Error:",
       err
     );
 
-    res.status(500).json({
-      message: "Server error occurred.",
-      error: err.message
+    return res.status(500).json({
+      success: false,
+      message:
+        "Server error occurred.",
     });
   }
 };
@@ -222,7 +380,16 @@ exports.getProfile = async (
 ) => {
   try {
     const userId =
-      req.user.userId;
+      req.user?.userId ||
+      req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Authentication required.",
+      });
+    }
 
     const user =
       await User.findById(userId)
@@ -230,25 +397,27 @@ exports.getProfile = async (
 
     if (!user) {
       return res.status(404).json({
-        message: "User not found."
+        success: false,
+        message:
+          "User not found.",
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
-      user
+      user,
     });
 
   } catch (err) {
     console.error(
-      "Get Profile Error:",
+      "❌ Get Profile Error:",
       err
     );
 
-    res.status(500).json({
+    return res.status(500).json({
+      success: false,
       message:
         "Failed to fetch profile.",
-      error: err.message
     });
   }
 };
@@ -264,11 +433,20 @@ exports.updateProfile = async (
 ) => {
   try {
     const userId =
-      req.user.userId;
+      req.user?.userId ||
+      req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Authentication required.",
+      });
+    }
 
     const {
       name,
-      phone
+      phone,
     } = req.body;
 
     const user =
@@ -276,27 +454,87 @@ exports.updateProfile = async (
 
     if (!user) {
       return res.status(404).json({
-        message: "User not found."
+        success: false,
+        message:
+          "User not found.",
       });
     }
 
-    if (
-      name !== undefined
-    ) {
-      user.name =
+    // ------------------------------
+    // Update name
+    // ------------------------------
+
+    if (name !== undefined) {
+      const cleanName =
         name.trim();
+
+      if (cleanName.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Name must contain at least 2 characters.",
+        });
+      }
+
+      if (cleanName.length > 50) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Name cannot exceed 50 characters.",
+        });
+      }
+
+      user.name =
+        cleanName;
     }
 
-    if (
-      phone !== undefined
-    ) {
-      user.phone =
+    // ------------------------------
+    // Update phone
+    // ------------------------------
+
+    if (phone !== undefined) {
+      const cleanPhone =
         phone.trim();
+
+      if (!phoneRegex.test(cleanPhone)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Phone number must contain exactly 10 digits.",
+        });
+      }
+
+      // Check if another user
+      // already owns this phone
+      const phoneExists =
+        await User.findOne({
+          phone: cleanPhone,
+          _id: { $ne: userId },
+        });
+
+      if (phoneExists) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Phone number is already registered.",
+        });
+      }
+
+      user.phone =
+        cleanPhone;
+
+      // Changing phone means
+      // verification must happen again.
+      user.isPhoneVerified =
+        false;
     }
+
+    user.updatedAt =
+      new Date();
 
     await user.save();
 
-    res.json({
+    return res.json({
       success: true,
 
       message:
@@ -307,21 +545,31 @@ exports.updateProfile = async (
         name: user.name,
         email: user.email,
         phone: user.phone,
+
+        isEmailVerified:
+          user.isEmailVerified,
+
+        isPhoneVerified:
+          user.isPhoneVerified,
+
+        isActive:
+          user.isActive,
+
         lastKnownLocation:
-          user.lastKnownLocation
-      }
+          user.lastKnownLocation,
+      },
     });
 
   } catch (err) {
     console.error(
-      "Update Profile Error:",
+      "❌ Update Profile Error:",
       err
     );
 
-    res.status(500).json({
+    return res.status(500).json({
+      success: false,
       message:
         "Failed to update profile.",
-      error: err.message
     });
   }
 };
@@ -337,11 +585,20 @@ exports.changePassword = async (
 ) => {
   try {
     const userId =
-      req.user.userId;
+      req.user?.userId ||
+      req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Authentication required.",
+      });
+    }
 
     const {
       currentPassword,
-      newPassword
+      newPassword,
     } = req.body;
 
     if (
@@ -349,17 +606,17 @@ exports.changePassword = async (
       !newPassword
     ) {
       return res.status(400).json({
+        success: false,
         message:
-          "Current password and new password are required."
+          "Current password and new password are required.",
       });
     }
 
-    if (
-      newPassword.length < 6
-    ) {
+    if (newPassword.length < 6) {
       return res.status(400).json({
+        success: false,
         message:
-          "New password must be at least 6 characters."
+          "New password must be at least 6 characters.",
       });
     }
 
@@ -368,7 +625,9 @@ exports.changePassword = async (
 
     if (!user) {
       return res.status(404).json({
-        message: "User not found."
+        success: false,
+        message:
+          "User not found.",
       });
     }
 
@@ -380,38 +639,39 @@ exports.changePassword = async (
 
     if (!isMatch) {
       return res.status(400).json({
+        success: false,
         message:
-          "Current password is incorrect."
+          "Current password is incorrect.",
       });
     }
-
-    const salt =
-      await bcrypt.genSalt(10);
 
     user.password =
       await bcrypt.hash(
         newPassword,
-        salt
+        10
       );
+
+    user.updatedAt =
+      new Date();
 
     await user.save();
 
-    res.json({
+    return res.json({
       success: true,
       message:
-        "Password changed successfully."
+        "Password changed successfully.",
     });
 
   } catch (err) {
     console.error(
-      "Change Password Error:",
+      "❌ Change Password Error:",
       err
     );
 
-    res.status(500).json({
+    return res.status(500).json({
+      success: false,
       message:
         "Failed to change password.",
-      error: err.message
     });
   }
 };

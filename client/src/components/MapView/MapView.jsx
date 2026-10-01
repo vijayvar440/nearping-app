@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import {
   MapContainer,
   TileLayer,
@@ -8,8 +14,10 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
+
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
 import axios from "axios";
 import { io } from "socket.io-client";
 
@@ -21,7 +29,8 @@ import "./MapView.css";
 // =====================================================
 
 const API_URL =
-  import.meta.env.VITE_API_URL || "https://nearping-app.onrender.com";
+  import.meta.env.VITE_API_URL ||
+  "https://nearping-app.onrender.com";
 
 const socket = io(API_URL, {
   transports: ["websocket", "polling"],
@@ -42,7 +51,10 @@ const getAlertTheme = (type = "") => {
     };
   }
 
-  if (alertType === "URGENT_HELP" || alertType.includes("HELP")) {
+  if (
+    alertType === "URGENT_HELP" ||
+    alertType.includes("HELP")
+  ) {
     return {
       color: "#F59E0B",
       fillColor: "#FBBF24",
@@ -58,7 +70,7 @@ const getAlertTheme = (type = "") => {
 };
 
 // =====================================================
-// CUSTOM ALERT MARKER
+// ALERT MARKER
 // =====================================================
 
 const createCustomIcon = (type = "") => {
@@ -66,34 +78,79 @@ const createCustomIcon = (type = "") => {
 
   return L.divIcon({
     className: "custom-leaflet-marker",
+
     html: `
       <div
-        class="marker-pin"
         style="
-          background-color: ${theme.color};
-          box-shadow: 0 0 12px ${theme.color};
+          width: 38px;
+          height: 38px;
+          border-radius: 50% 50% 50% 0;
+          background: ${theme.color};
+          transform: rotate(-45deg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 14px ${theme.color};
+          border: 2px solid white;
         "
       >
-        <span>${theme.emoji}</span>
+        <span
+          style="
+            transform: rotate(45deg);
+            font-size: 18px;
+          "
+        >
+          ${theme.emoji}
+        </span>
       </div>
     `,
+
     iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -19],
+    iconAnchor: [19, 38],
+    popupAnchor: [0, -38],
   });
 };
 
 // =====================================================
-// USER LOCATION ICON
+// 📍 USER LOCATION ICON
+// CSS PAR DEPEND NAHI HAI
 // =====================================================
 
 const userIcon = L.divIcon({
-  className: "user-leaflet-marker",
+  className: "near-ping-current-location",
+
   html: `
-    <div class="user-pulse-dot"></div>
+    <div
+      style="
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #2563eb;
+        border: 4px solid #ffffff;
+        box-shadow:
+          0 0 0 5px rgba(37, 99, 235, 0.25),
+          0 0 18px rgba(37, 99, 235, 0.9);
+        position: relative;
+      "
+    >
+      <div
+        style="
+          position: absolute;
+          width: 7px;
+          height: 7px;
+          background: white;
+          border-radius: 50%;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        "
+      ></div>
+    </div>
   `,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -14],
 });
 
 // =====================================================
@@ -102,16 +159,18 @@ const userIcon = L.divIcon({
 
 const tempSelectedIcon = L.divIcon({
   className: "selected-leaflet-marker",
+
   html: `
     <div
       style="
-        font-size: 26px;
+        font-size: 30px;
         filter: drop-shadow(0 0 6px #ef4444);
       "
     >
       📍
     </div>
   `,
+
   iconSize: [30, 30],
   iconAnchor: [15, 30],
 });
@@ -123,17 +182,33 @@ const tempSelectedIcon = L.divIcon({
 const MapRecenter = ({ coords }) => {
   const map = useMap();
 
+  const firstCenterDone = useRef(false);
+
   useEffect(() => {
     if (!coords) return;
 
     const lat = Number(coords.lat);
     const lng = Number(coords.lng);
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
       return;
     }
 
-    map.setView([lat, lng], 13);
+    // First GPS location par map center karo
+    if (!firstCenterDone.current) {
+      map.setView(
+        [lat, lng],
+        16,
+        {
+          animate: true,
+        }
+      );
+
+      firstCenterDone.current = true;
+    }
   }, [coords, map]);
 
   return null;
@@ -143,7 +218,9 @@ const MapRecenter = ({ coords }) => {
 // MAP CLICK
 // =====================================================
 
-const MapClickHandler = ({ onMapClick }) => {
+const MapClickHandler = ({
+  onMapClick,
+}) => {
   useMapEvents({
     click(e) {
       onMapClick(e.latlng);
@@ -162,10 +239,14 @@ const MapView = ({
   setSelectedLocation,
   setIsModalOpen,
 }) => {
-  const { coords } = useContext(LocationContext);
+  const { coords } =
+    useContext(LocationContext);
 
-  const [pings, setPings] = useState([]);
-  const [mapError, setMapError] = useState("");
+  const [pings, setPings] =
+    useState([]);
+
+  const [mapError, setMapError] =
+    useState("");
 
   // ===================================================
   // FETCH NEARBY PINGS
@@ -174,14 +255,21 @@ const MapView = ({
   useEffect(() => {
     if (!coords) return;
 
-    const latitude = Number(coords.lat);
-    const longitude = Number(coords.lng);
+    const latitude =
+      Number(coords.lat);
+
+    const longitude =
+      Number(coords.lng);
 
     if (
       !Number.isFinite(latitude) ||
       !Number.isFinite(longitude)
     ) {
-      console.error("Invalid user coordinates:", coords);
+      console.error(
+        "❌ Invalid user coordinates:",
+        coords
+      );
+
       return;
     }
 
@@ -189,42 +277,58 @@ const MapView = ({
       try {
         setMapError("");
 
-        console.log("📍 User Location:", {
-          latitude,
-          longitude,
-        });
-
-        const response = await axios.get(
-          `${API_URL}/api/pings/near`,
+        console.log(
+          "📍 User Location:",
           {
-            params: {
-              latitude,
-              longitude,
-
-              // 50 KM
-              radius: 50,
-            },
+            latitude,
+            longitude,
           }
         );
 
-        console.log("🗺️ Nearby Pings:", response.data);
+        const response =
+          await axios.get(
+            `${API_URL}/api/pings/near`,
+            {
+              params: {
+                latitude,
+                longitude,
 
-        const receivedPings = Array.isArray(response.data)
-          ? response.data
-          : [];
+                // 50 KM
+                radius: 50,
+              },
+            }
+          );
 
-        const activePings = receivedPings.filter(
-          (ping) => ping.status !== "RESOLVED"
+        console.log(
+          "🗺️ Nearby Pings:",
+          response.data
         );
+
+        const receivedPings =
+          Array.isArray(
+            response.data
+          )
+            ? response.data
+            : [];
+
+        const activePings =
+          receivedPings.filter(
+            (ping) =>
+              ping.status !==
+              "RESOLVED"
+          );
 
         setPings(activePings);
       } catch (error) {
         console.error(
           "❌ Map fetch error:",
-          error.response?.data || error.message
+          error.response?.data ||
+            error.message
         );
 
-        setMapError("Alerts load nahi ho pa rahe hain.");
+        setMapError(
+          "Alerts load nahi ho pa rahe hain."
+        );
       }
     };
 
@@ -236,54 +340,112 @@ const MapView = ({
   // ===================================================
 
   useEffect(() => {
-    const handleNewPing = (newPing) => {
-      console.log("🔔 New Ping Received:", newPing);
+    const handleNewPing = (
+      newPing
+    ) => {
+      console.log(
+        "🔔 New Ping Received:",
+        newPing
+      );
 
-      if (!newPing?._id) return;
+      if (!newPing?._id) {
+        return;
+      }
 
-      if (newPing.status === "RESOLVED") return;
+      if (
+        newPing.status ===
+        "RESOLVED"
+      ) {
+        return;
+      }
 
-      setPings((previousPings) => {
-        const alreadyExists = previousPings.some(
-          (ping) => ping._id === newPing._id
-        );
+      setPings(
+        (previousPings) => {
+          const alreadyExists =
+            previousPings.some(
+              (ping) =>
+                String(ping._id) ===
+                String(newPing._id)
+            );
 
-        if (alreadyExists) {
-          return previousPings;
+          if (alreadyExists) {
+            return previousPings;
+          }
+
+          return [
+            newPing,
+            ...previousPings,
+          ];
         }
-
-        return [newPing, ...previousPings];
-      });
-    };
-
-    const handlePingResolved = ({ pingId }) => {
-      console.log("✅ Ping Resolved:", pingId);
-
-      setPings((previousPings) =>
-        previousPings.filter(
-          (ping) => ping._id !== pingId
-        )
       );
     };
 
-    const handlePingDeleted = ({ pingId }) => {
-      console.log("🗑️ Ping Deleted:", pingId);
+    const handlePingResolved = ({
+      pingId,
+    }) => {
+      console.log(
+        "✅ Ping Resolved:",
+        pingId
+      );
 
-      setPings((previousPings) =>
-        previousPings.filter(
-          (ping) => ping._id !== pingId
-        )
+      setPings(
+        (previousPings) =>
+          previousPings.filter(
+            (ping) =>
+              String(ping._id) !==
+              String(pingId)
+          )
       );
     };
 
-    socket.on("new-ping", handleNewPing);
-    socket.on("ping-resolved", handlePingResolved);
-    socket.on("ping-deleted", handlePingDeleted);
+    const handlePingDeleted = ({
+      pingId,
+    }) => {
+      console.log(
+        "🗑️ Ping Deleted:",
+        pingId
+      );
+
+      setPings(
+        (previousPings) =>
+          previousPings.filter(
+            (ping) =>
+              String(ping._id) !==
+              String(pingId)
+          )
+      );
+    };
+
+    socket.on(
+      "new-ping",
+      handleNewPing
+    );
+
+    socket.on(
+      "ping-resolved",
+      handlePingResolved
+    );
+
+    socket.on(
+      "ping-deleted",
+      handlePingDeleted
+    );
 
     return () => {
-      socket.off("new-ping", handleNewPing);
-      socket.off("ping-resolved", handlePingResolved);
-      socket.off("ping-deleted", handlePingDeleted);
+      socket.off(
+        "new-ping",
+        handleNewPing
+      );
+
+      socket.off(
+        "ping-resolved",
+        handlePingResolved
+      );
+
+      socket.off(
+        "ping-deleted",
+        handlePingDeleted
+      );
     };
   }, []);
 
@@ -291,7 +453,9 @@ const MapView = ({
   // MAP CLICK
   // ===================================================
 
-  const handleMapClick = (latlng) => {
+  const handleMapClick = (
+    latlng
+  ) => {
     setSelectedLocation(latlng);
 
     if (setIsModalOpen) {
@@ -306,13 +470,19 @@ const MapView = ({
   if (!coords) {
     return (
       <div className="map-loading-box">
-        <p>📍 GPS Location fetch ho rahi hai...</p>
+        <p>
+          📍 GPS Location fetch ho
+          rahi hai...
+        </p>
       </div>
     );
   }
 
-  const userLat = Number(coords.lat);
-  const userLng = Number(coords.lng);
+  const userLat =
+    Number(coords.lat);
+
+  const userLng =
+    Number(coords.lng);
 
   if (
     !Number.isFinite(userLat) ||
@@ -320,7 +490,10 @@ const MapView = ({
   ) {
     return (
       <div className="map-loading-box">
-        <p>❌ Location coordinates invalid hain.</p>
+        <p>
+          ❌ Location coordinates
+          invalid hain.
+        </p>
       </div>
     );
   }
@@ -330,7 +503,17 @@ const MapView = ({
   // ===================================================
 
   return (
-    <div className="map-container-wrapper">
+    <div
+      className="map-container-wrapper"
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+      }}
+    >
+      {/* =============================================
+          ERROR
+      ============================================= */}
 
       {mapError && (
         <div
@@ -339,7 +522,8 @@ const MapView = ({
             zIndex: 1000,
             top: "10px",
             left: "50%",
-            transform: "translateX(-50%)",
+            transform:
+              "translateX(-50%)",
             background: "#7f1d1d",
             color: "#fff",
             padding: "8px 14px",
@@ -351,68 +535,160 @@ const MapView = ({
         </div>
       )}
 
+      {/* =============================================
+          CURRENT LOCATION BADGE
+      ============================================= */}
+
+      <div
+        style={{
+          position: "absolute",
+          zIndex: 1000,
+          top: "12px",
+          left: "12px",
+          background:
+            "rgba(15, 23, 42, 0.92)",
+          color: "#fff",
+          padding: "8px 12px",
+          borderRadius: "10px",
+          fontSize: "12px",
+          boxShadow:
+            "0 4px 12px rgba(0,0,0,0.3)",
+          pointerEvents: "none",
+        }}
+      >
+        📍 Current Location
+      </div>
+
+      {/* =============================================
+          MAP
+      ============================================= */}
+
       <MapContainer
-        center={[userLat, userLng]}
-        zoom={13}
+        center={[
+          userLat,
+          userLng,
+        ]}
+        zoom={16}
         style={{
           height: "100%",
           width: "100%",
         }}
       >
-
-        {/* =============================================
+        {/* ===========================================
             OPEN STREET MAP
-        ============================================= */}
+        =========================================== */}
 
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
 
-        {/* =============================================
-            RECENTER USER
-        ============================================= */}
+        {/* ===========================================
+            RECENTER
+        =========================================== */}
 
-        <MapRecenter coords={coords} />
-
-        {/* =============================================
-            MAP CLICK
-        ============================================= */}
-
-        <MapClickHandler
-          onMapClick={handleMapClick}
+        <MapRecenter
+          coords={coords}
         />
 
-        {/* =============================================
-            USER LOCATION
-        ============================================= */}
+        {/* ===========================================
+            MAP CLICK
+        =========================================== */}
+
+        <MapClickHandler
+          onMapClick={
+            handleMapClick
+          }
+        />
+
+        {/* ===========================================
+            📍 CURRENT USER LOCATION
+        =========================================== */}
+
+        <Circle
+          center={[
+            userLat,
+            userLng,
+          ]}
+          radius={35}
+          pathOptions={{
+            color: "#2563eb",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.12,
+            weight: 2,
+          }}
+        />
 
         <Marker
-          position={[userLat, userLng]}
+          position={[
+            userLat,
+            userLng,
+          ]}
           icon={userIcon}
+          zIndexOffset={1000}
         >
           <Popup>
-            📍 <strong>Aap yahan hain</strong>
+            <div
+              style={{
+                textAlign: "center",
+                minWidth: "120px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "18px",
+                  marginBottom: "4px",
+                }}
+              >
+                📍
+              </div>
+
+              <strong>
+                Aap yahan hain
+              </strong>
+
+              <div
+                style={{
+                  marginTop: "5px",
+                  fontSize: "10px",
+                  color: "#666",
+                }}
+              >
+                {userLat.toFixed(5)},
+                {" "}
+                {userLng.toFixed(5)}
+              </div>
+            </div>
           </Popup>
         </Marker>
 
-        {/* =============================================
+        {/* ===========================================
             SELECTED NEW ALERT LOCATION
-        ============================================= */}
+        =========================================== */}
 
         {selectedLocation &&
           Number.isFinite(
-            Number(selectedLocation.lat)
+            Number(
+              selectedLocation.lat
+            )
           ) &&
           Number.isFinite(
-            Number(selectedLocation.lng)
+            Number(
+              selectedLocation.lng
+            )
           ) && (
             <Marker
               position={[
-                Number(selectedLocation.lat),
-                Number(selectedLocation.lng),
+                Number(
+                  selectedLocation.lat
+                ),
+                Number(
+                  selectedLocation.lng
+                ),
               ]}
-              icon={tempSelectedIcon}
+              icon={
+                tempSelectedIcon
+              }
             >
               <Popup>
                 🎯 New Alert Location
@@ -420,16 +696,19 @@ const MapView = ({
             </Marker>
           )}
 
-        {/* =============================================
+        {/* ===========================================
             ALL PINGS
-        ============================================= */}
+        =========================================== */}
 
         {pings.map((ping) => {
           const coordinates =
-            ping?.location?.coordinates;
+            ping?.location
+              ?.coordinates;
 
           if (
-            !Array.isArray(coordinates) ||
+            !Array.isArray(
+              coordinates
+            ) ||
             coordinates.length < 2
           ) {
             console.warn(
@@ -441,11 +720,17 @@ const MapView = ({
           }
 
           // GeoJSON:
-          // coordinates[0] = longitude
-          // coordinates[1] = latitude
+          // [longitude, latitude]
 
-          const lng = Number(coordinates[0]);
-          const lat = Number(coordinates[1]);
+          const lng =
+            Number(
+              coordinates[0]
+            );
+
+          const lat =
+            Number(
+              coordinates[1]
+            );
 
           if (
             !Number.isFinite(lat) ||
@@ -463,87 +748,120 @@ const MapView = ({
             return null;
           }
 
-          const theme = getAlertTheme(
-            ping.type
-          );
+          const theme =
+            getAlertTheme(
+              ping.type
+            );
 
           const broadcastRadiusKm =
-            Number(ping.broadcastRadius) || 5;
+            Number(
+              ping.broadcastRadius
+            ) || 5;
 
           const radiusInMeters =
-            broadcastRadiusKm * 1000;
+            broadcastRadiusKm *
+            1000;
 
           return (
-            <React.Fragment key={ping._id}>
-
-              {/* =======================================
+            <React.Fragment
+              key={ping._id}
+            >
+              {/* =================================
                   COVERAGE CIRCLE
-              ======================================= */}
+              ================================= */}
 
               <Circle
-                center={[lat, lng]}
-                radius={radiusInMeters}
+                center={[
+                  lat,
+                  lng,
+                ]}
+                radius={
+                  radiusInMeters
+                }
                 pathOptions={{
-                  color: theme.color,
-                  fillColor: theme.fillColor,
+                  color:
+                    theme.color,
+                  fillColor:
+                    theme.fillColor,
                   fillOpacity: 0.18,
-                  dashArray: "8, 8",
+                  dashArray:
+                    "8, 8",
                   weight: 2,
                 }}
               />
 
-              {/* =======================================
+              {/* =================================
                   PING MARKER
-              ======================================= */}
+              ================================= */}
 
               <Marker
-                position={[lat, lng]}
-                icon={createCustomIcon(ping.type)}
+                position={[
+                  lat,
+                  lng,
+                ]}
+                icon={createCustomIcon(
+                  ping.type
+                )}
               >
                 <Popup>
                   <div className="popup-content">
-
                     <strong>
-                      {ping.title || "NearPing Alert"}
+                      {ping.title ||
+                        "NearPing Alert"}
                     </strong>
 
                     {ping.description && (
                       <p>
-                        {ping.description}
+                        {
+                          ping.description
+                        }
                       </p>
                     )}
 
                     <div
                       style={{
-                        marginTop: "6px",
-                        fontSize: "11px",
-                        fontWeight: "bold",
-                        color: theme.color,
+                        marginTop:
+                          "6px",
+                        fontSize:
+                          "11px",
+                        fontWeight:
+                          "bold",
+                        color:
+                          theme.color,
                       }}
                     >
                       📡 Coverage:{" "}
-                      {broadcastRadiusKm} KM
+                      {
+                        broadcastRadiusKm
+                      }{" "}
+                      KM
                     </div>
 
                     <div
                       style={{
-                        marginTop: "4px",
-                        fontSize: "10px",
-                        color: "#666",
+                        marginTop:
+                          "4px",
+                        fontSize:
+                          "10px",
+                        color:
+                          "#666",
                       }}
                     >
-                      📍 {lat.toFixed(5)},{" "}
-                      {lng.toFixed(5)}
+                      📍{" "}
+                      {lat.toFixed(
+                        5
+                      )}
+                      ,{" "}
+                      {lng.toFixed(
+                        5
+                      )}
                     </div>
-
                   </div>
                 </Popup>
               </Marker>
-
             </React.Fragment>
           );
         })}
-
       </MapContainer>
     </div>
   );

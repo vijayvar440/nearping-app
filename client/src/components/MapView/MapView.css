@@ -189,3 +189,49 @@
   }
 
 }
+
+/* =====================================================
+   🗺️ LEAFLET MAP HEIGHT FIX
+   ===================================================== */
+
+.map-container-wrapper {
+  width: 100%;
+  height: 480px;
+  min-height: 480px;
+  position: relative;
+}
+
+.map-container-wrapper .leaflet-container {
+  width: 100%;
+  height: 100% !important;
+  min-height: 480px;
+}
+
+/* Current location marker */
+.near-ping-current-location {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Selected location marker */
+.selected-leaflet-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* =====================================================
+   📱 MOBILE
+   ===================================================== */
+
+@media (max-width: 600px) {
+  .map-container-wrapper {
+    width: 100%;
+    height: 360px;
+    min-height: 360px;
+  }
+
+  .map-container-wrapper .leaflet-container {
+    height: 360px !important;
+    min-height: 360px;
+  }
+}
