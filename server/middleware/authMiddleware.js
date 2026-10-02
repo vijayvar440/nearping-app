@@ -14,38 +14,61 @@ const authMiddleware = (req, res, next) => {
       });
     }
 
-    const token = authHeader.startsWith("Bearer ")
-      ? authHeader.slice(7).trim()
-      : authHeader.trim();
+    let token = authHeader;
+
+    if (authHeader.startsWith("Bearer ")) {
+      token = authHeader.substring(7).trim();
+    }
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Invalid authorization token.",
+        message: "Token is missing.",
       });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(
+      token,
+      JWT_SECRET
+    );
 
-    if (!decoded?.userId && !decoded?._id) {
+    if (!decoded?.userId) {
       return res.status(401).json({
         success: false,
         message: "Invalid token payload.",
       });
     }
 
-    req.user = decoded;
+    req.user = {
+      userId: decoded.userId,
+    };
 
     next();
+
   } catch (error) {
     console.error(
-      "❌ Auth Middleware Error:",
+      "❌ JWT ERROR:",
+      error.name,
       error.message
     );
 
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token expired. Please login again.",
+      });
+    }
+
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token.",
+      });
+    }
+
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired token.",
+      message: "Authentication failed.",
     });
   }
 };

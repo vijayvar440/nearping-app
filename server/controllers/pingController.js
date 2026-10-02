@@ -20,12 +20,11 @@ exports.createPing = async (req, res) => {
       longitude,
       broadcastRadius,
       expiryHours,
-      user,
     } = req.body;
 
-    // -------------------------------------------------
+    // =================================================
     // GET LATITUDE
-    // -------------------------------------------------
+    // =================================================
 
     const rawLat =
       lat ??
@@ -34,9 +33,9 @@ exports.createPing = async (req, res) => {
       location?.latitude ??
       location?.coordinates?.[1];
 
-    // -------------------------------------------------
+    // =================================================
     // GET LONGITUDE
-    // -------------------------------------------------
+    // =================================================
 
     const rawLng =
       lng ??
@@ -45,12 +44,12 @@ exports.createPing = async (req, res) => {
       location?.longitude ??
       location?.coordinates?.[0];
 
-    // -------------------------------------------------
-    // VALIDATE LOCATION
-    // -------------------------------------------------
-
     const parsedLat = Number(rawLat);
     const parsedLng = Number(rawLng);
+
+    // =================================================
+    // VALIDATE LOCATION
+    // =================================================
 
     if (
       !Number.isFinite(parsedLat) ||
@@ -58,7 +57,6 @@ exports.createPing = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        error: "Invalid Location",
         message:
           "Valid latitude and longitude are required.",
       });
@@ -72,17 +70,18 @@ exports.createPing = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        error: "Invalid Location",
-        message: "Latitude or longitude is out of range.",
+        message:
+          "Latitude or longitude is out of range.",
       });
     }
 
-    // -------------------------------------------------
-    // GEOJSON LOCATION
+    // =================================================
+    // GEOJSON
     //
     // IMPORTANT:
-    // [longitude, latitude]
-    // -------------------------------------------------
+    // longitude FIRST
+    // latitude SECOND
+    // =================================================
 
     const formattedLocation = {
       type: "Point",
@@ -92,149 +91,229 @@ exports.createPing = async (req, res) => {
       ],
     };
 
-    // -------------------------------------------------
+    // =================================================
     // BROADCAST RADIUS
     // KM
-    // -------------------------------------------------
+    // =================================================
 
-    const finalRadius =
-      Number(broadcastRadius) > 0
-        ? Number(broadcastRadius)
-        : 5;
+    let finalRadius =
+      Number(broadcastRadius);
 
-    // -------------------------------------------------
+    if (
+      !Number.isFinite(finalRadius) ||
+      finalRadius <= 0
+    ) {
+      finalRadius = 5;
+    }
+
+    // Maximum 50 KM
+    finalRadius = Math.min(
+      finalRadius,
+      50
+    );
+
+    // =================================================
     // EXPIRY
-    // -------------------------------------------------
+    // =================================================
 
-    const finalExpiryHours =
-      Number(expiryHours) > 0
-        ? Number(expiryHours)
-        : 24;
+    let finalExpiryHours =
+      Number(expiryHours);
+
+    if (
+      !Number.isFinite(
+        finalExpiryHours
+      ) ||
+      finalExpiryHours <= 0
+    ) {
+      finalExpiryHours = 24;
+    }
+
+    // Maximum 7 days
+    finalExpiryHours = Math.min(
+      finalExpiryHours,
+      168
+    );
 
     const expiresAt = new Date(
       Date.now() +
-        finalExpiryHours * 60 * 60 * 1000
+        finalExpiryHours *
+          60 *
+          60 *
+          1000
     );
 
-    // -------------------------------------------------
+    // =================================================
     // USER ID
-    // -------------------------------------------------
+    // =================================================
 
     const currentUserId =
       req.user?.userId ||
       req.user?._id ||
-      user ||
       null;
 
-    // -------------------------------------------------
+    // =================================================
     // CREATE PING
-    // -------------------------------------------------
+    // =================================================
 
     const newPing = new Ping({
-      title,
-      type: type || "LOST",
-      description,
-      landmark,
-      contactInfo,
-      secretQuestion:
-        secretQuestion || "",
+      title: title?.trim(),
+      type:
+        type || "LOST",
 
-      location: formattedLocation,
+      description:
+        description?.trim() || "",
+
+      landmark:
+        landmark?.trim() || "",
+
+      contactInfo:
+        contactInfo?.trim() || "",
+
+      secretQuestion:
+        secretQuestion?.trim() || "",
+
+      location:
+        formattedLocation,
 
       broadcastRadius:
         finalRadius,
 
       expiresAt,
 
-      user: currentUserId,
+      user:
+        currentUserId,
+
+      status: "ACTIVE",
     });
 
     await newPing.save();
 
+    // =================================================
+    // LOG
+    // =================================================
+
     console.log(
-      "✅ Ping Created:",
+      "===================================="
+    );
+
+    console.log(
+      "✅ NEW PING CREATED"
+    );
+
+    console.log(
+      "🆔 Ping ID:",
       newPing._id.toString()
     );
 
     console.log(
-      "📍 Ping Location:",
-      newPing.location
+      "📍 Latitude:",
+      parsedLat
     );
 
     console.log(
-      "⏰ Expires:",
-      newPing.expiresAt
+      "📍 Longitude:",
+      parsedLng
     );
 
-    // -------------------------------------------------
+    console.log(
+      "📡 Radius:",
+      finalRadius,
+      "KM"
+    );
+
+    console.log(
+      "⏰ Expiry:",
+      expiresAt
+    );
+
+    console.log(
+      "===================================="
+    );
+
+    // =================================================
     // SOCKET
-    // -------------------------------------------------
+    // =================================================
 
-    const io = req.app.get("io");
-
-    // -------------------------------------------------
-    // AUTO MATCH
-    // -------------------------------------------------
-
-    const targetType =
-      String(type).toUpperCase() === "LOST"
-        ? "FOUND"
-        : "LOST";
-
-    const nearbyMatches =
-      await Ping.find({
-        type: targetType,
-
-        status: "ACTIVE",
-
-        expiresAt: {
-          $gt: new Date(),
-        },
-
-        location: {
-          $near: {
-            $geometry:
-              formattedLocation,
-
-            // KM -> METERS
-            $maxDistance:
-              finalRadius * 1000,
-          },
-        },
-      }).populate(
-        "user",
-        "_id name email"
-      );
-
-    // -------------------------------------------------
-    // SOCKET EVENTS
-    // -------------------------------------------------
+    const io =
+      req.app.get("io");
 
     if (io) {
-      // New alert
+      // Realtime new alert
       io.emit(
         "new-ping",
         newPing
       );
 
-      // Auto match
-      if (
-        nearbyMatches.length > 0
-      ) {
-        io.emit(
-          "potential-match-found",
-          {
-            newPing,
-            matchedPings:
-              nearbyMatches,
-          }
-        );
-      }
+      console.log(
+        "📡 new-ping emitted"
+      );
     }
 
-    // -------------------------------------------------
+    // =================================================
+    // AUTO MATCH
+    // =================================================
+
+    const currentType =
+      String(type || "LOST")
+        .toUpperCase();
+
+    const targetType =
+      currentType === "LOST"
+        ? "FOUND"
+        : currentType === "FOUND"
+        ? "LOST"
+        : null;
+
+    let nearbyMatches = [];
+
+    if (targetType) {
+      nearbyMatches =
+        await Ping.find({
+          type: targetType,
+
+          status: "ACTIVE",
+
+          expiresAt: {
+            $gt: new Date(),
+          },
+
+          location: {
+            $near: {
+              $geometry:
+                formattedLocation,
+
+              $maxDistance:
+                finalRadius * 1000,
+            },
+          },
+        }).populate(
+          "user",
+          "_id name email"
+        );
+    }
+
+    // =================================================
+    // MATCH SOCKET
+    // =================================================
+
+    if (
+      io &&
+      nearbyMatches.length > 0
+    ) {
+      io.emit(
+        "potential-match-found",
+        {
+          newPing,
+
+          matchedPings:
+            nearbyMatches,
+        }
+      );
+    }
+
+    // =================================================
     // RESPONSE
-    // -------------------------------------------------
+    // =================================================
 
     return res.status(201).json({
       success: true,
@@ -255,8 +334,12 @@ exports.createPing = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      error: "Failed to create ping",
-      details: error.message,
+
+      message:
+        "Failed to create alert.",
+
+      error:
+        error.message,
     });
   }
 };
@@ -283,17 +366,15 @@ exports.getPingsNear = async (
       req.query.rad ??
       5;
 
-    // -------------------------------------------------
-    // PARSE
-    // -------------------------------------------------
-
     const lat = Number(rawLat);
     const lng = Number(rawLng);
-    const radius = Number(rawRadius);
+    const radius = Number(
+      rawRadius
+    );
 
-    // -------------------------------------------------
+    // =================================================
     // VALIDATE
-    // -------------------------------------------------
+    // =================================================
 
     if (
       !Number.isFinite(lat) ||
@@ -301,7 +382,7 @@ exports.getPingsNear = async (
     ) {
       return res.status(400).json({
         success: false,
-        error:
+        message:
           "Valid latitude and longitude are required.",
       });
     }
@@ -314,28 +395,53 @@ exports.getPingsNear = async (
     ) {
       return res.status(400).json({
         success: false,
-        error:
-          "Latitude or longitude is out of range.",
+        message:
+          "Latitude or longitude is invalid.",
       });
     }
 
-    const finalRadius =
+    let finalRadius =
       Number.isFinite(radius) &&
       radius > 0
         ? radius
         : 5;
 
-    // -------------------------------------------------
+    // Maximum search radius 50 KM
+    finalRadius = Math.min(
+      finalRadius,
+      50
+    );
+
+    // =================================================
     // SEARCH
-    // -------------------------------------------------
+    // =================================================
 
     console.log(
-      "🔎 Searching nearby pings:",
-      {
-        lat,
-        lng,
-        radiusKm: finalRadius,
-      }
+      "===================================="
+    );
+
+    console.log(
+      "🔎 NEARBY PING SEARCH"
+    );
+
+    console.log(
+      "📍 Latitude:",
+      lat
+    );
+
+    console.log(
+      "📍 Longitude:",
+      lng
+    );
+
+    console.log(
+      "📡 Radius:",
+      finalRadius,
+      "KM"
+    );
+
+    console.log(
+      "===================================="
     );
 
     const pings =
@@ -352,14 +458,14 @@ exports.getPingsNear = async (
               type: "Point",
 
               // IMPORTANT:
-              // longitude first
+              // longitude FIRST
               coordinates: [
                 lng,
                 lat,
               ],
             },
 
-            // KM -> METERS
+            // KM → METERS
             $maxDistance:
               finalRadius * 1000,
           },
@@ -374,12 +480,13 @@ exports.getPingsNear = async (
         });
 
     console.log(
-      `📍 ${pings.length} nearby pings found`
+      "📍 Nearby pings found:",
+      pings.length
     );
 
-    // -------------------------------------------------
+    // =================================================
     // RESPONSE
-    // -------------------------------------------------
+    // =================================================
 
     return res.status(200).json(
       pings
@@ -392,9 +499,11 @@ exports.getPingsNear = async (
 
     return res.status(500).json({
       success: false,
+
+      message:
+        "Failed to fetch nearby alerts.",
+
       error:
-        "Failed to fetch nearby alerts",
-      details:
         error.message,
     });
   }
@@ -412,6 +521,14 @@ exports.deletePing = async (
     const { id } =
       req.params;
 
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Alert ID is required.",
+      });
+    }
+
     const deletedPing =
       await Ping.findByIdAndDelete(
         id
@@ -425,6 +542,10 @@ exports.deletePing = async (
       });
     }
 
+    // =================================================
+    // SOCKET
+    // =================================================
+
     const io =
       req.app.get("io");
 
@@ -437,10 +558,16 @@ exports.deletePing = async (
       );
     }
 
+    console.log(
+      "🗑️ Ping deleted:",
+      id
+    );
+
     return res.status(200).json({
       success: true,
+
       message:
-        "Alert sabhi jagah se delete ho gaya.",
+        "Alert successfully deleted.",
     });
   } catch (error) {
     console.error(
@@ -450,9 +577,11 @@ exports.deletePing = async (
 
     return res.status(500).json({
       success: false,
+
       message:
         "Server error during delete.",
-      details:
+
+      error:
         error.message,
     });
   }

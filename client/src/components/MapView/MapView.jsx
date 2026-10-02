@@ -1,10 +1,4 @@
-import React, {
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
+import React, { useContext, useEffect, useState, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -17,7 +11,6 @@ import {
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
 import axios from "axios";
 import { io } from "socket.io-client";
 
@@ -81,39 +74,25 @@ const createCustomIcon = (type = "") => {
 
     html: `
       <div
+        class="marker-pin"
         style="
-          width: 38px;
-          height: 38px;
-          border-radius: 50% 50% 50% 0;
-          background: ${theme.color};
-          transform: rotate(-45deg);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 0 14px ${theme.color};
-          border: 2px solid white;
+          background-color: ${theme.color};
+          box-shadow: 0 0 12px ${theme.color};
         "
       >
-        <span
-          style="
-            transform: rotate(45deg);
-            font-size: 18px;
-          "
-        >
-          ${theme.emoji}
-        </span>
+        <span>${theme.emoji}</span>
       </div>
     `,
 
     iconSize: [38, 38],
-    iconAnchor: [19, 38],
-    popupAnchor: [0, -38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -19],
   });
 };
 
 // =====================================================
-// 📍 USER LOCATION ICON
-// CSS PAR DEPEND NAHI HAI
+// 📍 CURRENT USER LOCATION ICON
+// CSS PAR DEPEND NAHI
 // =====================================================
 
 const userIcon = L.divIcon({
@@ -122,24 +101,24 @@ const userIcon = L.divIcon({
   html: `
     <div
       style="
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
+        width: 22px;
+        height: 22px;
         background: #2563eb;
-        border: 4px solid #ffffff;
+        border: 4px solid white;
+        border-radius: 50%;
         box-shadow:
-          0 0 0 5px rgba(37, 99, 235, 0.25),
+          0 0 0 6px rgba(37, 99, 235, 0.25),
           0 0 18px rgba(37, 99, 235, 0.9);
         position: relative;
       "
     >
       <div
         style="
-          position: absolute;
-          width: 7px;
-          height: 7px;
+          width: 6px;
+          height: 6px;
           background: white;
           border-radius: 50%;
+          position: absolute;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
@@ -148,9 +127,9 @@ const userIcon = L.divIcon({
     </div>
   `,
 
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-  popupAnchor: [0, -14],
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+  popupAnchor: [0, -18],
 });
 
 // =====================================================
@@ -163,7 +142,7 @@ const tempSelectedIcon = L.divIcon({
   html: `
     <div
       style="
-        font-size: 30px;
+        font-size: 26px;
         filter: drop-shadow(0 0 6px #ef4444);
       "
     >
@@ -177,12 +156,15 @@ const tempSelectedIcon = L.divIcon({
 
 // =====================================================
 // MAP RECENTER
+// First GPS location par center hoga
+// Har GPS update par map ko force nahi karega
 // =====================================================
 
 const MapRecenter = ({ coords }) => {
   const map = useMap();
 
-  const firstCenterDone = useRef(false);
+  const firstCenterDone =
+    useRef(false);
 
   useEffect(() => {
     if (!coords) return;
@@ -197,7 +179,6 @@ const MapRecenter = ({ coords }) => {
       return;
     }
 
-    // First GPS location par map center karo
     if (!firstCenterDone.current) {
       map.setView(
         [lat, lng],
@@ -292,8 +273,6 @@ const MapView = ({
               params: {
                 latitude,
                 longitude,
-
-                // 50 KM
                 radius: 50,
               },
             }
@@ -499,18 +478,12 @@ const MapView = ({
   }
 
   // ===================================================
-  // UI
+  // MAP UI
   // ===================================================
 
   return (
-    <div
-      className="map-container-wrapper"
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-      }}
-    >
+    <div className="map-container-wrapper">
+
       {/* =============================================
           ERROR
       ============================================= */}
@@ -536,23 +509,21 @@ const MapView = ({
       )}
 
       {/* =============================================
-          CURRENT LOCATION BADGE
+          CURRENT LOCATION LABEL
       ============================================= */}
 
       <div
         style={{
           position: "absolute",
           zIndex: 1000,
-          top: "12px",
-          left: "12px",
+          top: "10px",
+          left: "10px",
           background:
-            "rgba(15, 23, 42, 0.92)",
+            "rgba(15, 23, 42, 0.9)",
           color: "#fff",
-          padding: "8px 12px",
-          borderRadius: "10px",
+          padding: "7px 10px",
+          borderRadius: "8px",
           fontSize: "12px",
-          boxShadow:
-            "0 4px 12px rgba(0,0,0,0.3)",
           pointerEvents: "none",
         }}
       >
@@ -570,10 +541,11 @@ const MapView = ({
         ]}
         zoom={16}
         style={{
-          height: "100%",
           width: "100%",
+          height: "100%",
         }}
       >
+
         {/* ===========================================
             OPEN STREET MAP
         =========================================== */}
@@ -584,7 +556,7 @@ const MapView = ({
         />
 
         {/* ===========================================
-            RECENTER
+            RECENTER FIRST LOCATION
         =========================================== */}
 
         <MapRecenter
@@ -602,7 +574,7 @@ const MapView = ({
         />
 
         {/* ===========================================
-            📍 CURRENT USER LOCATION
+            🔵 CURRENT USER LOCATION
         =========================================== */}
 
         <Circle
@@ -631,20 +603,10 @@ const MapView = ({
             <div
               style={{
                 textAlign: "center",
-                minWidth: "120px",
               }}
             >
-              <div
-                style={{
-                  fontSize: "18px",
-                  marginBottom: "4px",
-                }}
-              >
-                📍
-              </div>
-
               <strong>
-                Aap yahan hain
+                📍 Aap yahan hain
               </strong>
 
               <div
@@ -766,6 +728,7 @@ const MapView = ({
             <React.Fragment
               key={ping._id}
             >
+
               {/* =================================
                   COVERAGE CIRCLE
               ================================= */}
@@ -791,7 +754,7 @@ const MapView = ({
               />
 
               {/* =================================
-                  PING MARKER
+                  ALERT MARKER
               ================================= */}
 
               <Marker
@@ -805,6 +768,7 @@ const MapView = ({
               >
                 <Popup>
                   <div className="popup-content">
+
                     <strong>
                       {ping.title ||
                         "NearPing Alert"}
@@ -856,12 +820,15 @@ const MapView = ({
                         5
                       )}
                     </div>
+
                   </div>
                 </Popup>
               </Marker>
+
             </React.Fragment>
           );
         })}
+
       </MapContainer>
     </div>
   );

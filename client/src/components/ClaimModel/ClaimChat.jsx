@@ -1,123 +1,176 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import axios from "axios";
 import { io } from "socket.io-client";
 
-const API_URL = "https://nearping-app.onrender.com";
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://nearping-app.onrender.com";
 
-const socket = io(API_URL);
+const socket = io(API_URL, {
+  transports: ["websocket", "polling"],
+});
 
-const ClaimChat = ({ claim, ping, finder, onClose }) => {
-  const [messages, setMessages] = useState([]);
-  const [text, setText] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
+const ClaimChat = ({
+  claim,
+  ping,
+  finder,
+  onClose,
+}) => {
+  const [messages, setMessages] =
+    useState([]);
 
-  const messagesEndRef = useRef(null);
+  const [text, setText] =
+    useState("");
 
-  // ===============================
-  // CURRENT USER ID
-  // ===============================
+  const [loading, setLoading] =
+    useState(true);
+
+  const [sending, setSending] =
+    useState(false);
+
+  const [deletingId, setDeletingId] =
+    useState(null);
+
+  const messagesEndRef =
+    useRef(null);
+
+  // ==========================================
+  // CURRENT USER
+  // ==========================================
+
   const getCurrentUserId = () => {
-    const userId = localStorage.getItem("userId");
+    const userId =
+      localStorage.getItem("userId");
 
     if (userId) {
       return userId;
     }
 
-    const storedUser = localStorage.getItem("user");
+    const storedUser =
+      localStorage.getItem("user");
 
     if (!storedUser) {
       return null;
     }
 
     try {
-      const parsedUser = JSON.parse(storedUser);
+      const user =
+        JSON.parse(storedUser);
 
       return (
-        parsedUser?._id ||
-        parsedUser?.id ||
-        parsedUser?.user?._id ||
-        parsedUser?.user?.id ||
+        user?._id ||
+        user?.id ||
+        user?.user?._id ||
+        user?.user?.id ||
         null
       );
     } catch {
-      return storedUser;
+      return null;
     }
   };
 
-  const currentUserId = getCurrentUserId();
+  const currentUserId =
+    getCurrentUserId();
 
-  // ===============================
-  // FINDER ID
-  // ===============================
+  // ==========================================
+  // FINDER
+  // ==========================================
+
   const finderId =
     typeof finder === "object"
       ? finder?._id || finder?.id
       : finder;
 
-  // ===============================
+  const finderName =
+    typeof finder === "object"
+      ? finder?.name || "Finder"
+      : "Finder";
+
+  // ==========================================
   // SCROLL
-  // ===============================
+  // ==========================================
+
   const scrollToBottom = () => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({
         behavior: "smooth",
       });
-    }, 50);
+    }, 100);
   };
 
-  // ===============================
-  // FETCH MESSAGES
-  // ===============================
+  // ==========================================
+  // LOAD MESSAGES
+  // ==========================================
+
   useEffect(() => {
     if (!finderId) {
       setLoading(false);
       return;
     }
 
-    const fetchMessages = async () => {
+    const loadMessages = async () => {
       try {
-        const token = localStorage.getItem("token");
+        setLoading(true);
 
-        const res = await axios.get(
-          `${API_URL}/api/messages/${finderId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+        const token =
+          localStorage.getItem("token");
+
+        const response =
+          await axios.get(
+            `${API_URL}/api/messages/${finderId}`,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            }
+          );
+
+        setMessages(
+          response.data?.messages || []
         );
-
-        setMessages(res.data.messages || []);
 
         scrollToBottom();
       } catch (error) {
         console.error(
-          "Fetch chat error:",
-          error.response?.data || error.message
+          "❌ Load messages error:",
+          error.response?.data ||
+            error.message
         );
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMessages();
+    loadMessages();
   }, [finderId]);
 
-  // ===============================
+  // ==========================================
   // SOCKET
-  // ===============================
+  // ==========================================
+
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      return;
+    }
 
-    // Join private user room
-    socket.emit("join-user", String(currentUserId));
+    socket.emit(
+      "join-user",
+      String(currentUserId)
+    );
 
-    // ===============================
-    // NEW MESSAGE
-    // ===============================
-    const handleNewMessage = (newMessage) => {
+    const handleNewMessage = (
+      newMessage
+    ) => {
+      if (!newMessage?._id) {
+        return;
+      }
+
       const senderId =
         newMessage.sender?._id ||
         newMessage.sender;
@@ -126,37 +179,55 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
         newMessage.receiver?._id ||
         newMessage.receiver;
 
-      const isThisChat =
-        (String(senderId) === String(finderId) &&
-          String(receiverId) === String(currentUserId)) ||
-        (String(senderId) === String(currentUserId) &&
-          String(receiverId) === String(finderId));
-
-      if (!isThisChat) return;
-
-      setMessages((prev) => {
-        const exists = prev.some(
-          (msg) => String(msg._id) === String(newMessage._id)
+      const belongsToChat =
+        (
+          String(senderId) ===
+            String(finderId) &&
+          String(receiverId) ===
+            String(currentUserId)
+        ) ||
+        (
+          String(senderId) ===
+            String(currentUserId) &&
+          String(receiverId) ===
+            String(finderId)
         );
 
-        if (exists) return prev;
+      if (!belongsToChat) {
+        return;
+      }
 
-        return [...prev, newMessage];
+      setMessages((previous) => {
+        const alreadyExists =
+          previous.some(
+            (message) =>
+              String(message._id) ===
+              String(newMessage._id)
+          );
+
+        if (alreadyExists) {
+          return previous;
+        }
+
+        return [
+          ...previous,
+          newMessage,
+        ];
       });
 
       scrollToBottom();
     };
 
-    // ===============================
-    // MESSAGE DELETED
-    // ===============================
-    const handleMessageDeleted = (data) => {
-      if (!data?.messageId) return;
+    const handleDeleted = (data) => {
+      if (!data?.messageId) {
+        return;
+      }
 
-      setMessages((prev) =>
-        prev.filter(
-          (msg) =>
-            String(msg._id) !== String(data.messageId)
+      setMessages((previous) =>
+        previous.filter(
+          (message) =>
+            String(message._id) !==
+            String(data.messageId)
         )
       );
     };
@@ -168,7 +239,7 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
 
     socket.on(
       "claim-chat-message-deleted",
-      handleMessageDeleted
+      handleDeleted
     );
 
     return () => {
@@ -179,58 +250,87 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
 
       socket.off(
         "claim-chat-message-deleted",
-        handleMessageDeleted
+        handleDeleted
       );
     };
-  }, [currentUserId, finderId]);
+  }, [
+    currentUserId,
+    finderId,
+  ]);
 
-  // ===============================
+  // ==========================================
   // SEND MESSAGE
-  // ===============================
+  // ==========================================
+
   const sendMessage = async () => {
-    if (!text.trim() || sending) return;
+    const messageText =
+      text.trim();
+
+    if (
+      !messageText ||
+      sending
+    ) {
+      return;
+    }
 
     if (!finderId) {
-      alert("Finder information nahi mila.");
+      alert(
+        "Finder information nahi mili."
+      );
       return;
     }
 
     if (!claim?._id) {
-      alert("Claim information nahi mila.");
+      alert(
+        "Claim information nahi mili."
+      );
       return;
     }
 
     try {
       setSending(true);
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
-      const res = await axios.post(
-        `${API_URL}/api/messages/send/${finderId}`,
-        {
-          message: text.trim(),
-          claimId: claim._id,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
+      const response =
+        await axios.post(
+          `${API_URL}/api/messages/send/${finderId}`,
+          {
+            message: messageText,
+            claimId: claim._id,
           },
-        }
-      );
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+            },
+          }
+        );
 
-      if (res.data.success) {
-        const sentMessage = res.data.newMessage;
+      if (
+        response.data?.success &&
+        response.data?.newMessage
+      ) {
+        const newMessage =
+          response.data.newMessage;
 
-        setMessages((prev) => {
-          const exists = prev.some(
-            (msg) =>
-              String(msg._id) ===
-              String(sentMessage._id)
-          );
+        setMessages((previous) => {
+          const exists =
+            previous.some(
+              (message) =>
+                String(message._id) ===
+                String(newMessage._id)
+            );
 
-          if (exists) return prev;
+          if (exists) {
+            return previous;
+          }
 
-          return [...prev, sentMessage];
+          return [
+            ...previous,
+            newMessage,
+          ];
         });
 
         setText("");
@@ -239,8 +339,9 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
       }
     } catch (error) {
       console.error(
-        "Send message error:",
-        error.response?.data || error.message
+        "❌ Send message error:",
+        error.response?.data ||
+          error.message
       );
 
       alert(
@@ -252,45 +353,57 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
     }
   };
 
-  // ===============================
+  // ==========================================
   // DELETE MESSAGE
-  // ===============================
-  const deleteMessage = async (messageId) => {
-    if (!messageId || deletingId) return;
+  // ==========================================
 
-    const confirmDelete = window.confirm(
-      "Kya aap ye message delete karna chahte hain?"
-    );
+  const deleteMessage = async (
+    messageId
+  ) => {
+    if (
+      !messageId ||
+      deletingId
+    ) {
+      return;
+    }
 
-    if (!confirmDelete) return;
+    const confirmDelete =
+      window.confirm(
+        "Kya aap ye message delete karna chahte hain?"
+      );
+
+    if (!confirmDelete) {
+      return;
+    }
 
     try {
       setDeletingId(messageId);
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
-      const res = await axios.delete(
+      await axios.delete(
         `${API_URL}/api/messages/${messageId}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization:
+              `Bearer ${token}`,
           },
         }
       );
 
-      if (res.data.success) {
-        setMessages((prev) =>
-          prev.filter(
-            (msg) =>
-              String(msg._id) !==
-              String(messageId)
-          )
-        );
-      }
+      setMessages((previous) =>
+        previous.filter(
+          (message) =>
+            String(message._id) !==
+            String(messageId)
+        )
+      );
     } catch (error) {
       console.error(
-        "Delete message error:",
-        error.response?.data || error.message
+        "❌ Delete message error:",
+        error.response?.data ||
+          error.message
       );
 
       alert(
@@ -302,21 +415,29 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
     }
   };
 
-  // ===============================
+  // ==========================================
   // ENTER TO SEND
-  // ===============================
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
+  // ==========================================
+
+  const handleKeyDown = (event) => {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+
       sendMessage();
     }
   };
 
-  // ===============================
-  // FORMAT TIME
-  // ===============================
+  // ==========================================
+  // TIME
+  // ==========================================
+
   const formatTime = (date) => {
-    if (!date) return "";
+    if (!date) {
+      return "";
+    }
 
     return new Date(date).toLocaleTimeString(
       "en-IN",
@@ -327,195 +448,205 @@ const ClaimChat = ({ claim, ping, finder, onClose }) => {
     );
   };
 
-  const finderName =
-    typeof finder === "object"
-      ? finder?.name || "Finder"
-      : "Finder";
+  // ==========================================
+  // UI
+  // ==========================================
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 z-[10000]">
+    <div className="fixed inset-0 bg-black z-[11000] flex flex-col">
 
-      <div className="bg-slate-950 border border-slate-800 w-full max-w-lg h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      {/* =====================================
+          HEADER
+      ===================================== */}
 
-        {/* ================= HEADER ================= */}
-        <div className="bg-slate-900 border-b border-slate-800 px-5 py-4 flex items-center gap-3">
+      <div className="h-16 flex items-center gap-3 px-4 bg-slate-900 border-b border-slate-800">
 
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white text-xl mr-1"
-          >
-            ←
-          </button>
+        <button
+          onClick={onClose}
+          className="text-2xl text-slate-300 hover:text-white"
+        >
+          ←
+        </button>
 
-          <div className="w-10 h-10 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-            👤
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-white truncate">
-              {finderName}
-            </h3>
-
-            <p className="text-xs text-green-400">
-              🔓 Claim Chat
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="text-slate-500 hover:text-white text-lg"
-          >
-            ✕
-          </button>
+        <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
+          👤
         </div>
 
-        {/* ================= ITEM INFO ================= */}
-        <div className="px-4 py-3 bg-indigo-500/5 border-b border-slate-800">
-          <p className="text-xs text-slate-400">
-            Chat regarding
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-bold truncate">
+            {finderName}
           </p>
 
-          <p className="text-sm text-white font-semibold truncate">
-            📦 {ping?.title || "Lost Item"}
-          </p>
-        </div>
-
-        {/* ================= MESSAGES ================= */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-
-          {loading ? (
-            <div className="h-full flex items-center justify-center">
-              <p className="text-sm text-slate-400">
-                Loading chat...
-              </p>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-
-              <div className="text-5xl mb-4">
-                💬
-              </div>
-
-              <h4 className="text-white font-bold">
-                Start Conversation
-              </h4>
-
-              <p className="text-xs text-slate-500 mt-1 max-w-xs">
-                Finder se item ke baare me baat karein.
-              </p>
-            </div>
-          ) : (
-            messages.map((message) => {
-              const senderId =
-                message.sender?._id ||
-                message.sender;
-
-              const isMine =
-                String(senderId) ===
-                String(currentUserId);
-
-              return (
-                <div
-                  key={message._id}
-                  className={`flex ${
-                    isMine
-                      ? "justify-end"
-                      : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`group relative max-w-[78%] px-4 py-2.5 rounded-2xl ${
-                      isMine
-                        ? "bg-indigo-600 text-white rounded-br-md"
-                        : "bg-slate-800 text-slate-200 rounded-bl-md"
-                    }`}
-                  >
-
-                    {/* MESSAGE */}
-                    <p className="text-sm whitespace-pre-wrap break-words pr-1">
-                      {message.message}
-                    </p>
-
-                    {/* TIME + DELETE */}
-                    <div className="flex items-center justify-end gap-2 mt-1">
-
-                      <p
-                        className={`text-[10px] ${
-                          isMine
-                            ? "text-indigo-200"
-                            : "text-slate-500"
-                        }`}
-                      >
-                        {formatTime(
-                          message.createdAt
-                        )}
-                      </p>
-
-                      {/* DELETE ONLY OWN MESSAGE */}
-                      {isMine && (
-                        <button
-                          onClick={() =>
-                            deleteMessage(
-                              message._id
-                            )
-                          }
-                          disabled={
-                            deletingId ===
-                            message._id
-                          }
-                          title="Delete message"
-                          className="text-[10px] text-red-200 hover:text-white opacity-70 hover:opacity-100 transition disabled:opacity-40"
-                        >
-                          {deletingId ===
-                          message._id
-                            ? "..."
-                            : "🗑️"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* ================= INPUT ================= */}
-        <div className="p-3 bg-slate-900 border-t border-slate-800">
-
-          <div className="flex items-end gap-2">
-
-            <textarea
-              value={text}
-              onChange={(e) =>
-                setText(e.target.value)
-              }
-              onKeyDown={handleKeyDown}
-              rows={1}
-              placeholder="Message Finder..."
-              className="flex-1 resize-none bg-slate-800 border border-slate-700 text-white rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500"
-            />
-
-            <button
-              onClick={sendMessage}
-              disabled={
-                !text.trim() || sending
-              }
-              className="w-12 h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition"
-            >
-              {sending ? "..." : "➤"}
-            </button>
-
-          </div>
-
-          <p className="text-[10px] text-slate-600 mt-2 text-center">
-            Enter to send • Shift + Enter for new line
+          <p className="text-[11px] text-green-400">
+            Claim accepted
           </p>
         </div>
 
       </div>
+
+      {/* =====================================
+          ITEM BAR
+      ===================================== */}
+
+      <div className="px-4 py-2 bg-slate-950 border-b border-slate-800">
+
+        <p className="text-[11px] text-slate-500">
+          Chat about
+        </p>
+
+        <p className="text-sm text-white font-semibold truncate">
+          📦 {ping?.title || "Lost Item"}
+        </p>
+
+      </div>
+
+      {/* =====================================
+          MESSAGES
+      ===================================== */}
+
+      <div className="flex-1 overflow-y-auto px-3 py-4 bg-slate-950">
+
+        {loading ? (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-sm text-slate-500">
+              Loading messages...
+            </p>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center">
+
+            <div className="text-5xl mb-3">
+              💬
+            </div>
+
+            <p className="text-white font-semibold">
+              Start chatting
+            </p>
+
+            <p className="text-xs text-slate-500 mt-1">
+              Item ke baare me message karein.
+            </p>
+
+          </div>
+        ) : (
+          messages.map((message) => {
+            const senderId =
+              message.sender?._id ||
+              message.sender;
+
+            const isMine =
+              String(senderId) ===
+              String(currentUserId);
+
+            return (
+              <div
+                key={message._id}
+                className={`flex mb-2 ${
+                  isMine
+                    ? "justify-end"
+                    : "justify-start"
+                }`}
+              >
+
+                <div
+                  className={`relative max-w-[82%] px-3 py-2 ${
+                    isMine
+                      ? "bg-indigo-600 text-white rounded-2xl rounded-br-sm"
+                      : "bg-slate-800 text-slate-100 rounded-2xl rounded-bl-sm"
+                  }`}
+                >
+
+                  <p className="text-sm whitespace-pre-wrap break-words">
+                    {message.message}
+                  </p>
+
+                  <div className="flex items-center justify-end gap-2 mt-1">
+
+                    <span
+                      className={`text-[10px] ${
+                        isMine
+                          ? "text-indigo-200"
+                          : "text-slate-500"
+                      }`}
+                    >
+                      {formatTime(
+                        message.createdAt
+                      )}
+                    </span>
+
+                    {isMine && (
+                      <button
+                        onClick={() =>
+                          deleteMessage(
+                            message._id
+                          )
+                        }
+                        disabled={
+                          deletingId ===
+                          message._id
+                        }
+                        className="text-[10px] opacity-70 hover:opacity-100"
+                      >
+                        {deletingId ===
+                        message._id
+                          ? "..."
+                          : "🗑️"}
+                      </button>
+                    )}
+
+                  </div>
+
+                </div>
+
+              </div>
+            );
+          })
+        )}
+
+        <div ref={messagesEndRef} />
+
+      </div>
+
+      {/* =====================================
+          INPUT
+      ===================================== */}
+
+      <div className="p-3 bg-slate-900 border-t border-slate-800">
+
+        <div className="flex items-end gap-2">
+
+          <textarea
+            value={text}
+            onChange={(event) =>
+              setText(event.target.value)
+            }
+            onKeyDown={handleKeyDown}
+            placeholder="Message..."
+            rows={1}
+            className="flex-1 resize-none bg-slate-800 border border-slate-700 text-white rounded-2xl px-4 py-3 text-sm outline-none focus:border-indigo-500"
+          />
+
+          <button
+            onClick={sendMessage}
+            disabled={
+              !text.trim() ||
+              sending
+            }
+            className="w-12 h-12 shrink-0 rounded-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white flex items-center justify-center text-lg"
+          >
+            {sending
+              ? "..."
+              : "➤"}
+          </button>
+
+        </div>
+
+        <p className="text-[9px] text-slate-600 text-center mt-2">
+          Enter = Send • Shift + Enter = New line
+        </p>
+
+      </div>
+
     </div>
   );
 };

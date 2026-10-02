@@ -12,8 +12,54 @@ export const LocationContext = createContext();
 export const LocationProvider = ({ children }) => {
   const [coords, setCoords] = useState(null);
 
-  // GPS watch ID
   const watchIdRef = useRef(null);
+
+  // ==========================================
+  // 📍 SAVE LOCATION
+  // ==========================================
+
+  const updateLocation = (position) => {
+    if (!position?.coords) {
+      return;
+    }
+
+    const {
+      latitude,
+      longitude,
+      accuracy,
+    } = position.coords;
+
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    const acc = Number(accuracy);
+
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
+      console.warn(
+        "⚠️ Invalid GPS coordinates:",
+        position
+      );
+
+      return;
+    }
+
+    const newCoords = {
+      lat,
+      lng,
+      accuracy: Number.isFinite(acc)
+        ? acc
+        : null,
+    };
+
+    setCoords(newCoords);
+
+    console.log(
+      "📍 GPS Location:",
+      newCoords
+    );
+  };
 
   // ==========================================
   // 📍 GET CURRENT LOCATION
@@ -46,26 +92,29 @@ export const LocationProvider = ({ children }) => {
           return null;
         }
 
+        console.log(
+          "📡 Getting high accuracy GPS..."
+        );
+
         const position =
           await Geolocation.getCurrentPosition({
             enableHighAccuracy: true,
-            timeout: 15000,
+
+            // GPS ko thoda extra time
+            timeout: 30000,
+
+            // Cached location use nahi karenge
             maximumAge: 0,
           });
 
-        const newCoords = {
+        updateLocation(position);
+
+        return {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          accuracy:
+            position.coords.accuracy ?? null,
         };
-
-        setCoords(newCoords);
-
-        console.log(
-          "📍 Current location:",
-          newCoords
-        );
-
-        return newCoords;
       }
 
       // ========================================
@@ -84,21 +133,17 @@ export const LocationProvider = ({ children }) => {
         (resolve) => {
           navigator.geolocation.getCurrentPosition(
             (position) => {
-              const newCoords = {
+              updateLocation(position);
+
+              resolve({
                 lat:
                   position.coords.latitude,
                 lng:
                   position.coords.longitude,
-              };
-
-              setCoords(newCoords);
-
-              console.log(
-                "📍 Current location:",
-                newCoords
-              );
-
-              resolve(newCoords);
+                accuracy:
+                  position.coords
+                    .accuracy ?? null,
+              });
             },
 
             (error) => {
@@ -112,7 +157,7 @@ export const LocationProvider = ({ children }) => {
 
             {
               enableHighAccuracy: true,
-              timeout: 15000,
+              timeout: 30000,
               maximumAge: 0,
             }
           );
@@ -132,211 +177,233 @@ export const LocationProvider = ({ children }) => {
   // ▶️ START LOCATION TRACKING
   // ==========================================
 
-  const startLocationTracking = async () => {
-    try {
-      // Already tracking
-      if (watchIdRef.current !== null) {
-        console.log(
-          "📍 Location tracking already running."
-        );
-
-        return;
-      }
-
-      // ========================================
-      // 📱 ANDROID / IOS
-      // ========================================
-
-      if (Capacitor.isNativePlatform()) {
-        let permissions =
-          await Geolocation.checkPermissions();
-
+  const startLocationTracking =
+    async () => {
+      try {
+        // Already tracking
         if (
-          permissions.location !== "granted"
+          watchIdRef.current !== null
         ) {
-          permissions =
-            await Geolocation.requestPermissions();
-        }
-
-        if (
-          permissions.location !== "granted"
-        ) {
-          console.warn(
-            "⚠️ Location permission denied."
+          console.log(
+            "📍 Location tracking already running."
           );
 
           return;
         }
 
-        // Get initial location
-        const current =
-          await Geolocation.getCurrentPosition({
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0,
-          });
+        // ======================================
+        // 📱 ANDROID / IOS
+        // ======================================
 
-        setCoords({
-          lat:
-            current.coords.latitude,
-          lng:
-            current.coords.longitude,
-        });
+        if (
+          Capacitor.isNativePlatform()
+        ) {
+          let permissions =
+            await Geolocation.checkPermissions();
 
-        console.log(
-          "📍 GPS tracking started."
-        );
+          if (
+            permissions.location !==
+            "granted"
+          ) {
+            permissions =
+              await Geolocation.requestPermissions();
+          }
 
-        // Start watching
-        const watchId =
-          await Geolocation.watchPosition(
-            {
-              enableHighAccuracy: true,
-              timeout: 15000,
-              maximumAge: 0,
+          if (
+            permissions.location !==
+            "granted"
+          ) {
+            console.warn(
+              "⚠️ Location permission denied."
+            );
+
+            return;
+          }
+
+          console.log(
+            "📡 Getting initial high accuracy GPS..."
+          );
+
+          // ------------------------------------
+          // Initial GPS location
+          // ------------------------------------
+
+          try {
+            const current =
+              await Geolocation.getCurrentPosition(
+                {
+                  enableHighAccuracy: true,
+                  timeout: 30000,
+                  maximumAge: 0,
+                }
+              );
+
+            updateLocation(current);
+
+            console.log(
+              "✅ Initial GPS received."
+            );
+          } catch (error) {
+            console.warn(
+              "⚠️ Initial GPS failed:",
+              error
+            );
+          }
+
+          // ------------------------------------
+          // Start GPS watch
+          // ------------------------------------
+
+          const watchId =
+            await Geolocation.watchPosition(
+              {
+                enableHighAccuracy: true,
+
+                timeout: 30000,
+
+                maximumAge: 0,
+              },
+
+              (position, error) => {
+                if (error) {
+                  console.warn(
+                    "⚠️ GPS watch error:",
+                    error
+                  );
+
+                  return;
+                }
+
+                if (!position) {
+                  return;
+                }
+
+                updateLocation(position);
+              }
+            );
+
+          watchIdRef.current =
+            watchId;
+
+          console.log(
+            "📍 High accuracy GPS tracking started."
+          );
+
+          return;
+        }
+
+        // ======================================
+        // 🌐 BROWSER
+        // ======================================
+
+        if (
+          !navigator.geolocation
+        ) {
+          console.warn(
+            "⚠️ Geolocation is not supported."
+          );
+
+          return;
+        }
+
+        // --------------------------------------
+        // Initial browser location
+        // --------------------------------------
+
+        await getCurrentLocation();
+
+        // --------------------------------------
+        // Browser GPS watch
+        // --------------------------------------
+
+        const browserWatchId =
+          navigator.geolocation.watchPosition(
+            (position) => {
+              updateLocation(position);
             },
 
-            (position, error) => {
-              if (error) {
-                console.warn(
-                  "⚠️ Location watch error:",
-                  error
-                );
+            (error) => {
+              console.warn(
+                "⚠️ Browser GPS Watch Error:",
+                error.message
+              );
+            },
 
-                return;
-              }
+            {
+              enableHighAccuracy: true,
 
-              if (position) {
-                const newCoords = {
-                  lat:
-                    position.coords.latitude,
-                  lng:
-                    position.coords.longitude,
-                };
+              timeout: 30000,
 
-                setCoords(newCoords);
-
-                console.log(
-                  "📍 Location updated:",
-                  newCoords
-                );
-              }
+              maximumAge: 0,
             }
           );
 
-        watchIdRef.current = watchId;
+        watchIdRef.current =
+          browserWatchId;
 
-        return;
-      }
-
-      // ========================================
-      // 🌐 BROWSER
-      // ========================================
-
-      if (!navigator.geolocation) {
-        console.warn(
-          "⚠️ Geolocation is not supported."
+        console.log(
+          "📍 Browser high accuracy GPS tracking started."
         );
-
-        return;
-      }
-
-      // Initial location
-      await getCurrentLocation();
-
-      // Start browser tracking
-      const browserWatchId =
-        navigator.geolocation.watchPosition(
-          (position) => {
-            const newCoords = {
-              lat:
-                position.coords.latitude,
-              lng:
-                position.coords.longitude,
-            };
-
-            setCoords(newCoords);
-
-            console.log(
-              "📍 Location updated:",
-              newCoords
-            );
-          },
-
-          (error) => {
-            console.warn(
-              "⚠️ Browser GPS Watch Error:",
-              error.message
-            );
-          },
-
-          {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0,
-          }
+      } catch (error) {
+        console.error(
+          "❌ Location tracking error:",
+          error
         );
-
-      watchIdRef.current =
-        browserWatchId;
-
-      console.log(
-        "📍 Browser GPS tracking started."
-      );
-    } catch (error) {
-      console.error(
-        "❌ Location tracking error:",
-        error
-      );
-    }
-  };
+      }
+    };
 
   // ==========================================
   // ⛔ STOP LOCATION TRACKING
   // ==========================================
 
-  const stopLocationTracking = async () => {
-    try {
-      const watchId =
-        watchIdRef.current;
+  const stopLocationTracking =
+    async () => {
+      try {
+        const watchId =
+          watchIdRef.current;
 
-      if (watchId === null) {
+        if (watchId === null) {
+          setCoords(null);
+
+          return;
+        }
+
+        // 📱 Android / IOS
+        if (
+          Capacitor.isNativePlatform()
+        ) {
+          await Geolocation.clearWatch({
+            id: watchId,
+          });
+        }
+
+        // 🌐 Browser
+        else if (
+          navigator.geolocation
+        ) {
+          navigator.geolocation.clearWatch(
+            watchId
+          );
+        }
+
+        watchIdRef.current = null;
+
         setCoords(null);
-        return;
-      }
 
-      // 📱 Android / IOS
-      if (Capacitor.isNativePlatform()) {
-        await Geolocation.clearWatch({
-          id: watchId,
-        });
-      }
-
-      // 🌐 Browser
-      else if (navigator.geolocation) {
-        navigator.geolocation.clearWatch(
-          watchId
+        console.log(
+          "⛔ GPS tracking stopped."
         );
+      } catch (error) {
+        console.error(
+          "❌ Stop location error:",
+          error
+        );
+
+        watchIdRef.current = null;
+
+        setCoords(null);
       }
-
-      watchIdRef.current = null;
-
-      // Remove old location
-      setCoords(null);
-
-      console.log(
-        "⛔ GPS tracking stopped."
-      );
-    } catch (error) {
-      console.error(
-        "❌ Stop location error:",
-        error
-      );
-
-      watchIdRef.current = null;
-      setCoords(null);
-    }
-  };
+    };
 
   // ==========================================
   // CONTEXT
@@ -348,13 +415,10 @@ export const LocationProvider = ({ children }) => {
         coords,
         setCoords,
 
-        // Manual location
         getCurrentLocation,
 
-        // Login ke baad
         startLocationTracking,
 
-        // Logout ke baad
         stopLocationTracking,
       }}
     >
