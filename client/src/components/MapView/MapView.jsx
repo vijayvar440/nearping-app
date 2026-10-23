@@ -1,4 +1,9 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useRef,
+} from "react";
+
 import {
   MapContainer,
   TileLayer,
@@ -11,23 +16,9 @@ import {
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import axios from "axios";
-import { io } from "socket.io-client";
 
 import { LocationContext } from "../../context/LocationContext";
 import "./MapView.css";
-
-// =====================================================
-// API CONFIG
-// =====================================================
-
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://nearping-app.onrender.com";
-
-const socket = io(API_URL, {
-  transports: ["websocket", "polling"],
-});
 
 // =====================================================
 // ALERT THEME
@@ -91,8 +82,7 @@ const createCustomIcon = (type = "") => {
 };
 
 // =====================================================
-// 📍 CURRENT USER LOCATION ICON
-// CSS PAR DEPEND NAHI
+// CURRENT USER LOCATION ICON
 // =====================================================
 
 const userIcon = L.divIcon({
@@ -133,7 +123,7 @@ const userIcon = L.divIcon({
 });
 
 // =====================================================
-// TEMP SELECTED LOCATION ICON
+// SELECTED LOCATION ICON
 // =====================================================
 
 const tempSelectedIcon = L.divIcon({
@@ -156,15 +146,12 @@ const tempSelectedIcon = L.divIcon({
 
 // =====================================================
 // MAP RECENTER
-// First GPS location par center hoga
-// Har GPS update par map ko force nahi karega
 // =====================================================
 
 const MapRecenter = ({ coords }) => {
   const map = useMap();
 
-  const firstCenterDone =
-    useRef(false);
+  const firstCenterDone = useRef(false);
 
   useEffect(() => {
     if (!coords) return;
@@ -216,6 +203,7 @@ const MapClickHandler = ({
 // =====================================================
 
 const MapView = ({
+  pings = [],
   selectedLocation,
   setSelectedLocation,
   setIsModalOpen,
@@ -223,218 +211,11 @@ const MapView = ({
   const { coords } =
     useContext(LocationContext);
 
-  const [pings, setPings] =
-    useState([]);
-
-  const [mapError, setMapError] =
-    useState("");
-
-  // ===================================================
-  // FETCH NEARBY PINGS
-  // ===================================================
-
-  useEffect(() => {
-    if (!coords) return;
-
-    const latitude =
-      Number(coords.lat);
-
-    const longitude =
-      Number(coords.lng);
-
-    if (
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude)
-    ) {
-      console.error(
-        "❌ Invalid user coordinates:",
-        coords
-      );
-
-      return;
-    }
-
-    const fetchPings = async () => {
-      try {
-        setMapError("");
-
-        console.log(
-          "📍 User Location:",
-          {
-            latitude,
-            longitude,
-          }
-        );
-
-        const response =
-          await axios.get(
-            `${API_URL}/api/pings/near`,
-            {
-              params: {
-                latitude,
-                longitude,
-                radius: 50,
-              },
-            }
-          );
-
-        console.log(
-          "🗺️ Nearby Pings:",
-          response.data
-        );
-
-        const receivedPings =
-          Array.isArray(
-            response.data
-          )
-            ? response.data
-            : [];
-
-        const activePings =
-          receivedPings.filter(
-            (ping) =>
-              ping.status !==
-              "RESOLVED"
-          );
-
-        setPings(activePings);
-      } catch (error) {
-        console.error(
-          "❌ Map fetch error:",
-          error.response?.data ||
-            error.message
-        );
-
-        setMapError(
-          "Alerts load nahi ho pa rahe hain."
-        );
-      }
-    };
-
-    fetchPings();
-  }, [coords]);
-
-  // ===================================================
-  // SOCKET REAL-TIME PINGS
-  // ===================================================
-
-  useEffect(() => {
-    const handleNewPing = (
-      newPing
-    ) => {
-      console.log(
-        "🔔 New Ping Received:",
-        newPing
-      );
-
-      if (!newPing?._id) {
-        return;
-      }
-
-      if (
-        newPing.status ===
-        "RESOLVED"
-      ) {
-        return;
-      }
-
-      setPings(
-        (previousPings) => {
-          const alreadyExists =
-            previousPings.some(
-              (ping) =>
-                String(ping._id) ===
-                String(newPing._id)
-            );
-
-          if (alreadyExists) {
-            return previousPings;
-          }
-
-          return [
-            newPing,
-            ...previousPings,
-          ];
-        }
-      );
-    };
-
-    const handlePingResolved = ({
-      pingId,
-    }) => {
-      console.log(
-        "✅ Ping Resolved:",
-        pingId
-      );
-
-      setPings(
-        (previousPings) =>
-          previousPings.filter(
-            (ping) =>
-              String(ping._id) !==
-              String(pingId)
-          )
-      );
-    };
-
-    const handlePingDeleted = ({
-      pingId,
-    }) => {
-      console.log(
-        "🗑️ Ping Deleted:",
-        pingId
-      );
-
-      setPings(
-        (previousPings) =>
-          previousPings.filter(
-            (ping) =>
-              String(ping._id) !==
-              String(pingId)
-          )
-      );
-    };
-
-    socket.on(
-      "new-ping",
-      handleNewPing
-    );
-
-    socket.on(
-      "ping-resolved",
-      handlePingResolved
-    );
-
-    socket.on(
-      "ping-deleted",
-      handlePingDeleted
-    );
-
-    return () => {
-      socket.off(
-        "new-ping",
-        handleNewPing
-      );
-
-      socket.off(
-        "ping-resolved",
-        handlePingResolved
-      );
-
-      socket.off(
-        "ping-deleted",
-        handlePingDeleted
-      );
-    };
-  }, []);
-
   // ===================================================
   // MAP CLICK
   // ===================================================
 
-  const handleMapClick = (
-    latlng
-  ) => {
+  const handleMapClick = (latlng) => {
     setSelectedLocation(latlng);
 
     if (setIsModalOpen) {
@@ -450,18 +231,18 @@ const MapView = ({
     return (
       <div className="map-loading-box">
         <p>
-          📍 GPS Location fetch ho
-          rahi hai...
+          📍 GPS Location fetch ho rahi hai...
         </p>
       </div>
     );
   }
 
-  const userLat =
-    Number(coords.lat);
+  // ===================================================
+  // USER LOCATION
+  // ===================================================
 
-  const userLng =
-    Number(coords.lng);
+  const userLat = Number(coords.lat);
+  const userLng = Number(coords.lng);
 
   if (
     !Number.isFinite(userLat) ||
@@ -470,47 +251,16 @@ const MapView = ({
     return (
       <div className="map-loading-box">
         <p>
-          ❌ Location coordinates
-          invalid hain.
+          ❌ Location coordinates invalid hain.
         </p>
       </div>
     );
   }
 
-  // ===================================================
-  // MAP UI
-  // ===================================================
-
   return (
     <div className="map-container-wrapper">
 
-      {/* =============================================
-          ERROR
-      ============================================= */}
-
-      {mapError && (
-        <div
-          style={{
-            position: "absolute",
-            zIndex: 1000,
-            top: "10px",
-            left: "50%",
-            transform:
-              "translateX(-50%)",
-            background: "#7f1d1d",
-            color: "#fff",
-            padding: "8px 14px",
-            borderRadius: "8px",
-            fontSize: "13px",
-          }}
-        >
-          {mapError}
-        </div>
-      )}
-
-      {/* =============================================
-          CURRENT LOCATION LABEL
-      ============================================= */}
+      {/* CURRENT LOCATION LABEL */}
 
       <div
         style={{
@@ -530,9 +280,7 @@ const MapView = ({
         📍 Current Location
       </div>
 
-      {/* =============================================
-          MAP
-      ============================================= */}
+      {/* MAP */}
 
       <MapContainer
         center={[
@@ -546,36 +294,28 @@ const MapView = ({
         }}
       >
 
-        {/* ===========================================
-            OPEN STREET MAP
-        =========================================== */}
+        {/* OPEN STREET MAP */}
 
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
 
-        {/* ===========================================
-            RECENTER FIRST LOCATION
-        =========================================== */}
+        {/* FIRST GPS LOCATION CENTER */}
 
         <MapRecenter
           coords={coords}
         />
 
-        {/* ===========================================
-            MAP CLICK
-        =========================================== */}
+        {/* MAP CLICK */}
 
         <MapClickHandler
-          onMapClick={
-            handleMapClick
-          }
+          onMapClick={handleMapClick}
         />
 
-        {/* ===========================================
-            🔵 CURRENT USER LOCATION
-        =========================================== */}
+        {/* =================================================
+            CURRENT USER LOCATION
+        ================================================= */}
 
         <Circle
           center={[
@@ -616,28 +356,23 @@ const MapView = ({
                   color: "#666",
                 }}
               >
-                {userLat.toFixed(5)},
-                {" "}
+                {userLat.toFixed(5)},{" "}
                 {userLng.toFixed(5)}
               </div>
             </div>
           </Popup>
         </Marker>
 
-        {/* ===========================================
+        {/* =================================================
             SELECTED NEW ALERT LOCATION
-        =========================================== */}
+        ================================================= */}
 
         {selectedLocation &&
           Number.isFinite(
-            Number(
-              selectedLocation.lat
-            )
+            Number(selectedLocation.lat)
           ) &&
           Number.isFinite(
-            Number(
-              selectedLocation.lng
-            )
+            Number(selectedLocation.lng)
           ) && (
             <Marker
               position={[
@@ -648,9 +383,7 @@ const MapView = ({
                   selectedLocation.lng
                 ),
               ]}
-              icon={
-                tempSelectedIcon
-              }
+              icon={tempSelectedIcon}
             >
               <Popup>
                 🎯 New Alert Location
@@ -658,176 +391,205 @@ const MapView = ({
             </Marker>
           )}
 
-        {/* ===========================================
+        {/* =================================================
             ALL PINGS
-        =========================================== */}
+        ================================================= */}
 
-        {pings.map((ping) => {
-          const coordinates =
-            ping?.location
-              ?.coordinates;
+        {Array.isArray(pings) &&
+          pings.map((ping) => {
 
-          if (
-            !Array.isArray(
-              coordinates
-            ) ||
-            coordinates.length < 2
-          ) {
-            console.warn(
-              "⚠️ Ping has invalid location:",
-              ping
-            );
+            if (!ping?._id) {
+              return null;
+            }
 
-            return null;
-          }
+            // GeoJSON:
+            // [longitude, latitude]
 
-          // GeoJSON:
-          // [longitude, latitude]
+            const coordinates =
+              ping?.location?.coordinates;
 
-          const lng =
-            Number(
-              coordinates[0]
-            );
+            if (
+              !Array.isArray(coordinates) ||
+              coordinates.length < 2
+            ) {
+              console.warn(
+                "⚠️ Ping has invalid location:",
+                ping
+              );
 
-          const lat =
-            Number(
-              coordinates[1]
-            );
+              return null;
+            }
 
-          if (
-            !Number.isFinite(lat) ||
-            !Number.isFinite(lng)
-          ) {
-            return null;
-          }
+            const lng =
+              Number(coordinates[0]);
 
-          if (
-            lat < -90 ||
-            lat > 90 ||
-            lng < -180 ||
-            lng > 180
-          ) {
-            return null;
-          }
+            const lat =
+              Number(coordinates[1]);
 
-          const theme =
-            getAlertTheme(
-              ping.type
-            );
+            if (
+              !Number.isFinite(lat) ||
+              !Number.isFinite(lng)
+            ) {
+              return null;
+            }
 
-          const broadcastRadiusKm =
-            Number(
-              ping.broadcastRadius
-            ) || 5;
+            if (
+              lat < -90 ||
+              lat > 90 ||
+              lng < -180 ||
+              lng > 180
+            ) {
+              return null;
+            }
 
-          const radiusInMeters =
-            broadcastRadiusKm *
-            1000;
+            // RESOLVED ALERT HIDE
 
-          return (
-            <React.Fragment
-              key={ping._id}
-            >
+            if (
+              String(ping.status).toUpperCase() ===
+              "RESOLVED"
+            ) {
+              return null;
+            }
 
-              {/* =================================
-                  COVERAGE CIRCLE
-              ================================= */}
+            // EXPIRED ALERT HIDE
 
-              <Circle
-                center={[
-                  lat,
-                  lng,
-                ]}
-                radius={
-                  radiusInMeters
-                }
-                pathOptions={{
-                  color:
-                    theme.color,
-                  fillColor:
-                    theme.fillColor,
-                  fillOpacity: 0.18,
-                  dashArray:
-                    "8, 8",
-                  weight: 2,
-                }}
-              />
+            if (
+              ping.expiresAt &&
+              new Date(
+                ping.expiresAt
+              ).getTime() <= Date.now()
+            ) {
+              return null;
+            }
 
-              {/* =================================
-                  ALERT MARKER
-              ================================= */}
+            const theme =
+              getAlertTheme(
+                ping.type
+              );
 
-              <Marker
-                position={[
-                  lat,
-                  lng,
-                ]}
-                icon={createCustomIcon(
-                  ping.type
-                )}
+            const broadcastRadiusKm =
+              Number(
+                ping.broadcastRadius
+              ) || 5;
+
+            const radiusInMeters =
+              broadcastRadiusKm * 1000;
+
+            return (
+              <React.Fragment
+                key={String(ping._id)}
               >
-                <Popup>
-                  <div className="popup-content">
 
-                    <strong>
-                      {ping.title ||
-                        "NearPing Alert"}
-                    </strong>
+                {/* =========================================
+                    COVERAGE CIRCLE
+                ========================================= */}
 
-                    {ping.description && (
-                      <p>
+                <Circle
+                  center={[
+                    lat,
+                    lng,
+                  ]}
+                  radius={
+                    radiusInMeters
+                  }
+                  pathOptions={{
+                    color:
+                      theme.color,
+                    fillColor:
+                      theme.fillColor,
+                    fillOpacity: 0.18,
+                    dashArray:
+                      "8, 8",
+                    weight: 2,
+                  }}
+                />
+
+                {/* =========================================
+                    ALERT MARKER
+                ========================================= */}
+
+                <Marker
+                  position={[
+                    lat,
+                    lng,
+                  ]}
+                  icon={createCustomIcon(
+                    ping.type
+                  )}
+                >
+                  <Popup>
+
+                    <div className="popup-content">
+
+                      <strong>
+                        {ping.title ||
+                          "NearPing Alert"}
+                      </strong>
+
+                      {ping.description && (
+                        <p>
+                          {
+                            ping.description
+                          }
+                        </p>
+                      )}
+
+                      {ping.landmark && (
+                        <div
+                          style={{
+                            marginTop:
+                              "6px",
+                            fontSize:
+                              "11px",
+                          }}
+                        >
+                          📍{" "}
+                          {ping.landmark}
+                        </div>
+                      )}
+
+                      <div
+                        style={{
+                          marginTop:
+                            "6px",
+                          fontSize:
+                            "11px",
+                          fontWeight:
+                            "bold",
+                          color:
+                            theme.color,
+                        }}
+                      >
+                        📡 Coverage:{" "}
                         {
-                          ping.description
-                        }
-                      </p>
-                    )}
+                          broadcastRadiusKm
+                        } KM
+                      </div>
 
-                    <div
-                      style={{
-                        marginTop:
-                          "6px",
-                        fontSize:
-                          "11px",
-                        fontWeight:
-                          "bold",
-                        color:
-                          theme.color,
-                      }}
-                    >
-                      📡 Coverage:{" "}
-                      {
-                        broadcastRadiusKm
-                      }{" "}
-                      KM
+                      <div
+                        style={{
+                          marginTop:
+                            "4px",
+                          fontSize:
+                            "10px",
+                          color:
+                            "#666",
+                        }}
+                      >
+                        📍{" "}
+                        {lat.toFixed(5)}
+                        {" , "}
+                        {lng.toFixed(5)}
+                      </div>
+
                     </div>
 
-                    <div
-                      style={{
-                        marginTop:
-                          "4px",
-                        fontSize:
-                          "10px",
-                        color:
-                          "#666",
-                      }}
-                    >
-                      📍{" "}
-                      {lat.toFixed(
-                        5
-                      )}
-                      ,{" "}
-                      {lng.toFixed(
-                        5
-                      )}
-                    </div>
+                  </Popup>
+                </Marker>
 
-                  </div>
-                </Popup>
-              </Marker>
-
-            </React.Fragment>
-          );
-        })}
+              </React.Fragment>
+            );
+          })}
 
       </MapContainer>
     </div>

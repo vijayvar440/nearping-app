@@ -51,7 +51,10 @@ const playAlertSound = (isEmergency = false) => {
   const audio = new Audio(soundUrl);
 
   audio.play().catch((err) => {
-    console.log("Audio play blocked:", err);
+    console.log(
+      "Audio play blocked:",
+      err
+    );
   });
 };
 
@@ -84,7 +87,8 @@ function App() {
   const [resolvedPings, setResolvedPings] =
     useState([]);
 
-  const [radius, setRadius] = useState(5);
+  const [radius, setRadius] =
+    useState(5);
 
   const [isModalOpen, setIsModalOpen] =
     useState(false);
@@ -108,8 +112,10 @@ function App() {
     setSelectedPingForViewClaims,
   ] = useState(null);
 
-  const [selectedLocation, setSelectedLocation] =
-    useState(null);
+  const [
+    selectedLocation,
+    setSelectedLocation,
+  ] = useState(null);
 
   // ===================================================
   // GET LOGGED-IN USER ID
@@ -131,7 +137,9 @@ function App() {
 
       if (
         typeof savedUserData === "string" &&
-        /^[a-f\d]{24}$/i.test(savedUserData)
+        /^[a-f\d]{24}$/i.test(
+          savedUserData
+        )
       ) {
         return savedUserData;
       }
@@ -145,7 +153,9 @@ function App() {
         parsed?.user?._id ||
         parsed?.user?.id ||
         parsed?.data?._id ||
-        localStorage.getItem("userId") ||
+        localStorage.getItem(
+          "userId"
+        ) ||
         null
       );
     } catch (error) {
@@ -155,24 +165,24 @@ function App() {
       );
 
       return (
-        localStorage.getItem("userId") ||
-        null
+        localStorage.getItem(
+          "userId"
+        ) || null
       );
     }
   };
 
   // ===================================================
-  // 🔐 AUTH → GPS CONTROL
+  // AUTH → GPS CONTROL
   // ===================================================
 
   useEffect(() => {
-    // AuthContext abhi check kar raha hai
     if (authLoading) {
       return;
     }
 
     // ===============================================
-    // ❌ NOT LOGGED IN
+    // NOT LOGGED IN
     // ===============================================
 
     if (!user) {
@@ -180,40 +190,30 @@ function App() {
         "🔒 User not logged in → GPS OFF"
       );
 
-      // GPS stop
       stopLocationTracking();
 
-      // Nearby data clear
       setPings([]);
       setResolvedPings([]);
 
-      // Create Alert close
       setIsModalOpen(false);
-
-      // Profile close
       setIsProfileOpen(false);
-
-      // Messages close
       setIsMessagesOpen(false);
 
-      // Login/Register popup
       setIsAuthModalOpen(true);
 
       return;
     }
 
     // ===============================================
-    // ✅ LOGGED IN
+    // LOGGED IN
     // ===============================================
 
     console.log(
       "🔓 User logged in → Starting GPS"
     );
 
-    // Login ke baad GPS start
     startLocationTracking();
 
-    // Login ke baad Auth popup close
     setIsAuthModalOpen(false);
   }, [
     user,
@@ -223,8 +223,7 @@ function App() {
   ]);
 
   // ===================================================
-  // 🔔 NOTIFICATION PERMISSION
-  // Only logged-in users
+  // NOTIFICATION PERMISSION
   // ===================================================
 
   useEffect(() => {
@@ -234,7 +233,8 @@ function App() {
 
     if (
       "Notification" in window &&
-      Notification.permission === "default"
+      Notification.permission ===
+        "default"
     ) {
       Notification.requestPermission()
         .then((permission) => {
@@ -260,7 +260,6 @@ function App() {
     let interval = null;
 
     const joinUserRoom = () => {
-      // ❌ No user → no private room
       if (!user) {
         return;
       }
@@ -333,27 +332,51 @@ function App() {
 
   // ===================================================
   // FETCH NEARBY PINGS
-  // ONLY LOGGED-IN + GPS
+  // IMPORTANT:
+  // FETCH DATA IS MERGED.
+  // IT DOES NOT ERASE SOCKET PINGS.
   // ===================================================
 
   useEffect(() => {
-    // ❌ Not logged in
     if (!user) {
       setPings([]);
       setResolvedPings([]);
       return;
     }
 
-    // ❌ GPS not available
     if (!coords) {
       return;
     }
+
+    const latitude =
+      Number(coords.lat);
+
+    const longitude =
+      Number(coords.lng);
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      console.error(
+        "❌ Invalid user coordinates:",
+        coords
+      );
+
+      return;
+    }
+
+    let cancelled = false;
 
     const fetchPings = async () => {
       try {
         console.log(
           "📍 Fetching nearby pings:",
-          coords
+          {
+            latitude,
+            longitude,
+            radius,
+          }
         );
 
         const response =
@@ -361,17 +384,26 @@ function App() {
             `${API_URL}/api/pings/near`,
             {
               params: {
-                latitude: coords.lat,
-                longitude: coords.lng,
-                radius: radius,
+                latitude,
+                longitude,
+                radius,
               },
             }
           );
+
+        if (cancelled) {
+          return;
+        }
 
         const allPings =
           Array.isArray(response.data)
             ? response.data
             : [];
+
+        console.log(
+          "🗺️ Nearby Pings:",
+          allPings
+        );
 
         const now = Date.now();
 
@@ -382,7 +414,10 @@ function App() {
         const activePings =
           allPings.filter((ping) => {
             const isActive =
-              ping.status !== "RESOLVED";
+              String(
+                ping.status
+              ).toUpperCase() !==
+              "RESOLVED";
 
             const isNotExpired =
               !ping.expiresAt ||
@@ -403,52 +438,109 @@ function App() {
         const historyPings =
           allPings.filter(
             (ping) =>
-              ping.status === "RESOLVED"
+              String(
+                ping.status
+              ).toUpperCase() ===
+              "RESOLVED"
           );
 
-        setPings(activePings);
-        setResolvedPings(historyPings);
+        // ==========================================
+        // IMPORTANT MERGE
+        // ==========================================
 
+        setPings((previousPings) => {
+          const pingMap =
+            new Map();
+
+          // Existing socket pings
+          previousPings.forEach(
+            (ping) => {
+              if (ping?._id) {
+                pingMap.set(
+                  String(ping._id),
+                  ping
+                );
+              }
+            }
+          );
+
+          // API pings
+          activePings.forEach(
+            (ping) => {
+              if (ping?._id) {
+                pingMap.set(
+                  String(ping._id),
+                  ping
+                );
+              }
+            }
+          );
+
+          return Array.from(
+            pingMap.values()
+          );
+        });
+
+        setResolvedPings(
+          historyPings
+        );
       } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
         console.error(
           "❌ App fetch error:",
-          error
+          error.response?.data ||
+            error.message
         );
       }
     };
 
     fetchPings();
-  }, [user, coords, radius]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    user,
+    coords,
+    radius,
+  ]);
 
   // ===================================================
   // REMOVE EXPIRED PINGS
   // ===================================================
 
   useEffect(() => {
-    const removeExpiredPings = () => {
-      const now = Date.now();
+    const removeExpiredPings =
+      () => {
+        const now = Date.now();
 
-      setPings((prevPings) =>
-        prevPings.filter((ping) => {
-          if (!ping.expiresAt) {
-            return true;
-          }
+        setPings((prevPings) =>
+          prevPings.filter(
+            (ping) => {
+              if (!ping.expiresAt) {
+                return true;
+              }
 
-          return (
-            new Date(
-              ping.expiresAt
-            ).getTime() > now
-          );
-        })
-      );
-    };
+              return (
+                new Date(
+                  ping.expiresAt
+                ).getTime() > now
+              );
+            }
+          )
+        );
+      };
 
     removeExpiredPings();
 
-    const interval = setInterval(
-      removeExpiredPings,
-      30000
-    );
+    const interval =
+      setInterval(
+        removeExpiredPings,
+        30000
+      );
 
     return () =>
       clearInterval(interval);
@@ -463,31 +555,68 @@ function App() {
     // NEW PING
     // ===============================================
 
-    const handleNewPing = (newPing) => {
-      // ❌ Logged-out user ko notification nahi
+    const handleNewPing = (
+      newPing
+    ) => {
       if (!user) {
         return;
       }
 
+      console.log(
+        "🔔 New Ping Received:",
+        newPing
+      );
+
+      if (!newPing?._id) {
+        return;
+      }
+
+      // Resolved alert ignore
       if (
-        newPing.expiresAt &&
-        new Date(
-          newPing.expiresAt
-        ).getTime() <= Date.now()
+        String(
+          newPing.status
+        ).toUpperCase() ===
+        "RESOLVED"
       ) {
         return;
       }
 
+      // Expired alert ignore
+      if (
+        newPing.expiresAt &&
+        new Date(
+          newPing.expiresAt
+        ).getTime() <=
+          Date.now()
+      ) {
+        return;
+      }
+
+      // ==========================================
+      // MERGE NEW PING
+      // ==========================================
+
       setPings((prevPings) => {
-        const alreadyExists =
+        const pingId =
+          String(newPing._id);
+
+        const exists =
           prevPings.some(
             (ping) =>
-              String(ping._id) ===
-              String(newPing._id)
+              String(
+                ping._id
+              ) === pingId
           );
 
-        if (alreadyExists) {
-          return prevPings;
+        if (exists) {
+          return prevPings.map(
+            (ping) =>
+              String(
+                ping._id
+              ) === pingId
+                ? newPing
+                : ping
+          );
         }
 
         return [
@@ -496,16 +625,28 @@ function App() {
         ];
       });
 
-      const isEmergency =
-        newPing.alertType ===
-        "EMERGENCY";
+      // ==========================================
+      // SOUND
+      // ==========================================
 
-      // 🔊 Sound
+      const isEmergency =
+        String(
+          newPing.type
+        ).toUpperCase() ===
+          "URGENT_HELP" ||
+        String(
+          newPing.alertType
+        ).toUpperCase() ===
+          "EMERGENCY";
+
       playAlertSound(
         isEmergency
       );
 
-      // 🔔 Browser notification
+      // ==========================================
+      // BROWSER NOTIFICATION
+      // ==========================================
+
       if (
         "Notification" in window &&
         Notification.permission ===
@@ -516,11 +657,16 @@ function App() {
             ? "🚨 EMERGENCY ALERT!"
             : "📡 Naya Radar Alert",
           {
-            body: `${newPing.title} - ${
-              newPing.landmark ||
-              "Location check karein"
+            body: `${
+              newPing.title ||
+              "New alert"
+            }${
+              newPing.landmark
+                ? ` - ${newPing.landmark}`
+                : ""
             }`,
-            icon: "/favicon.ico",
+            icon:
+              "/favicon.ico",
           }
         );
       }
@@ -537,11 +683,18 @@ function App() {
         return;
       }
 
+      console.log(
+        "✅ Ping Resolved:",
+        pingId
+      );
+
       setPings((prevPings) => {
         const foundPing =
           prevPings.find(
             (ping) =>
-              String(ping._id) ===
+              String(
+                ping._id
+              ) ===
               String(pingId)
           );
 
@@ -550,7 +703,8 @@ function App() {
             (prevResolved) => [
               {
                 ...foundPing,
-                status: "RESOLVED",
+                status:
+                  "RESOLVED",
               },
               ...prevResolved,
             ]
@@ -559,7 +713,9 @@ function App() {
 
         return prevPings.filter(
           (ping) =>
-            String(ping._id) !==
+            String(
+              ping._id
+            ) !==
             String(pingId)
         );
       });
@@ -576,10 +732,17 @@ function App() {
         return;
       }
 
+      console.log(
+        "🗑️ Ping Deleted:",
+        pingId
+      );
+
       setPings((prevPings) =>
         prevPings.filter(
           (ping) =>
-            String(ping._id) !==
+            String(
+              ping._id
+            ) !==
             String(pingId)
         )
       );
@@ -588,7 +751,9 @@ function App() {
         (prevResolved) =>
           prevResolved.filter(
             (ping) =>
-              String(ping._id) !==
+              String(
+                ping._id
+              ) !==
               String(pingId)
           )
       );
@@ -611,15 +776,19 @@ function App() {
         getLoggedInUserId();
 
       const targetPingId =
-        claimData.ping ||
-        claimData.pingId;
+        claimData?.ping ||
+        claimData?.pingId;
 
       setPings((currentPings) => {
         const matchedPing =
           currentPings.find(
             (ping) =>
-              String(ping._id) ===
-              String(targetPingId)
+              String(
+                ping._id
+              ) ===
+              String(
+                targetPingId
+              )
           );
 
         if (!matchedPing) {
@@ -701,10 +870,8 @@ function App() {
         claimData
       );
 
-      // 🔊 Sound
       playAlertSound(false);
 
-      // 🔔 Notification
       if (
         "Notification" in window &&
         Notification.permission ===
@@ -716,12 +883,12 @@ function App() {
             body:
               claimData.message ||
               "Kisi ne aapka lost item found kiya hai.",
-            icon: "/favicon.ico",
+            icon:
+              "/favicon.ico",
           }
         );
       }
 
-      // Alert
       alert(
         `🔔 ${
           claimData.message ||
@@ -754,7 +921,10 @@ function App() {
       handleNewClaim
     );
 
-    if (currentUserId && user) {
+    if (
+      currentUserId &&
+      user
+    ) {
       console.log(
         "🔔 Listening for owner claims:",
         `new-claim-owner-${currentUserId}`
@@ -814,13 +984,11 @@ function App() {
   // ===================================================
 
   const handleOpenAlert = () => {
-    // ❌ Login required
     if (!user) {
       setIsAuthModalOpen(true);
       return;
     }
 
-    // ✅ Logged-in user
     setIsModalOpen(true);
   };
 
@@ -873,16 +1041,13 @@ function App() {
   return (
     <div className="app-root">
 
-      {/* ============================================
-          RADAR ALERT
-          Only logged-in users
-      ============================================ */}
+      {/* RADAR ALERT */}
 
-      {user && <RadarAlertToast />}
+      {user && (
+        <RadarAlertToast />
+      )}
 
-      {/* ============================================
-          HEADER
-      ============================================ */}
+      {/* HEADER */}
 
       <Header
         onOpenModal={
@@ -902,37 +1067,33 @@ function App() {
         }
       />
 
-      {/* ============================================
-          MAIN
-      ============================================ */}
+      {/* MAIN */}
 
       <main className="main-layout">
 
-        {/* ==========================================
-            MAP
-        ========================================== */}
+        {/* MAP */}
 
         <div className="map-section">
+
           <MapView
+            pings={pings}
             selectedLocation={
               selectedLocation
             }
-
             setSelectedLocation={
               setSelectedLocation
             }
-
             setIsModalOpen={
               setIsModalOpen
             }
           />
+
         </div>
 
-        {/* ==========================================
-            PING FEED
-        ========================================== */}
+        {/* PING FEED */}
 
         <div className="feed-section">
+
           <PingFeed
             pings={pings}
 
@@ -947,7 +1108,6 @@ function App() {
             }
 
             onClaimClick={(ping) => {
-              // Login required
               if (!user) {
                 setIsAuthModalOpen(
                   true
@@ -960,8 +1120,9 @@ function App() {
               );
             }}
 
-            onViewClaimsClick={(ping) => {
-              // Login required
+            onViewClaimsClick={(
+              ping
+            ) => {
               if (!user) {
                 setIsAuthModalOpen(
                   true
@@ -978,13 +1139,12 @@ function App() {
               handleDeletePing
             }
           />
+
         </div>
 
       </main>
 
-      {/* ==========================================
-          CREATE PING MODAL
-      ========================================== */}
+      {/* CREATE PING MODAL */}
 
       <CreatePingModal
         isOpen={
@@ -1001,9 +1161,7 @@ function App() {
         }
       />
 
-      {/* ==========================================
-          AUTH MODAL
-      ========================================== */}
+      {/* AUTH MODAL */}
 
       <AuthModal
         isOpen={
@@ -1015,9 +1173,7 @@ function App() {
         }
       />
 
-      {/* ==========================================
-          PROFILE
-      ========================================== */}
+      {/* PROFILE */}
 
       {user && (
         <Profile
@@ -1033,9 +1189,7 @@ function App() {
         />
       )}
 
-      {/* ==========================================
-          CLAIM MODAL
-      ========================================== */}
+      {/* CLAIM MODAL */}
 
       {selectedPingForClaim &&
         user && (
@@ -1052,9 +1206,7 @@ function App() {
           />
         )}
 
-      {/* ==========================================
-          CLAIMS LIST
-      ========================================== */}
+      {/* CLAIMS LIST */}
 
       {selectedPingForViewClaims &&
         user && (
@@ -1076,9 +1228,7 @@ function App() {
           />
         )}
 
-      {/* ==========================================
-          MESSAGES
-      ========================================== */}
+      {/* MESSAGES */}
 
       {isMessagesOpen &&
         user && (
